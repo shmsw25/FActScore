@@ -99,10 +99,12 @@ class DocDB(object):
         cursor = self.connection.cursor()
         cursor.execute("SELECT text FROM documents WHERE title = ?", (title,))
         results = cursor.fetchall()
-        results = None if results is None else [r for r in results]
+        results = [r for r in results]
         cursor.close()
-        assert len(results)==1
-        return [{"title": title, "text": para} for para in results[0][0].split(SPECIAL_SEPARATOR)]
+        assert results is not None and len(results)==1, f"`topic` in your data ({title}) is likely to be not a valid title in the DB."
+        results = [{"title": title, "text": para} for para in results[0][0].split(SPECIAL_SEPARATOR)]
+        assert len(results)>0, f"`topic` in your data ({title}) is likely to be not a valid title in the DB."
+        return results
 
 class Retrieval(object):
 
