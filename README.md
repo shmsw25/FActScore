@@ -53,6 +53,17 @@ python -m factscore.factscorer \
     --verbose
 ```
 
+Alternatively, you can compute FActScore through your own python code.
+```python
+from factscore.factscorer import FactScorer
+
+fs = FactScorer(openai_key="...")
+
+# topic entities: list of strings (entities to generate bios)
+# generations: list of strings (model generations)
+score = fs.get_score(topics, generations)
+```
+
 It uses `enwiki-20230401` by default, and will download the database from our Google drive.
 
 Instructions to use Instruct-LLAMA-7B or your own LM coming soon!
