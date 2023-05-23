@@ -74,6 +74,33 @@ score = fs.get_score(topics, generations)
 
 Alternatively, you can create a .jsonl file, where each line has `topic` (entity name, exactly same as the one from `.txt` file) and `output` (generation from LM), and then use a command line [above](#Running-FActScore-using-a-command-line).
 
+We recommend using (A) `FactScorer(model_name="retrieval+ChatGPT")` (default) or (B) `FactScorer(model_name="retrieval+llama+npm")`. They have 0.99 Pearson correlation. Here're results of a range of models, which you can easily reproduce through [these command lines](#Running-FActScore-using-a-command-line).
+
+| Model | FActScore from (A) | FActScore from (B) |
+|---|---|---|
+| [GPT-4](https://arxiv.org/abs/2303.08774) | 73.1 | 59.9 |
+| [ChatGPT](https://openai.com/blog/chatgpt) | 71.6 | 60.4 |
+| [Alpaca 65B](https://crfm.stanford.edu/2023/03/13/alpaca.html) | 55.6 | 46.3 |
+| [InstructGPT](https://openai.com/research/instruction-following) | 52.8 | 41.7 |
+| [Alpaca 13B](https://crfm.stanford.edu/2023/03/13/alpaca.html) | 47.7 | 40.3 |
+| [Vicuna 13B](https://lmsys.org/blog/2023-03-30-vicuna/) | 46.6 | 40.7 |
+| [Alpaca 7B](https://crfm.stanford.edu/2023/03/13/alpaca.html) | 39.7 | 36.5 |
+| [Vicuna 7B](https://lmsys.org/blog/2023-03-30-vicuna/) | 38.9 | 36.9 |
+| [MPT Chat 7B](https://www.mosaicml.com/blog/mpt-7b) | 30.1 | 27.9 |
+| [Oasst Pythia 12B](https://huggingface.co/OpenAssistant/oasst-sft-1-pythia-12b) | 25.1 | 20.8 |
+| [Dolly 12B](https://huggingface.co/databricks/dolly-v2-12b) | 21.7 | 17.1 |
+| [StableLM tuned 7B](https://huggingface.co/stabilityai/stablelm-tuned-alpha-7b) | 17.3 | 16.3 |
+
+```python
+from factscore.factscorer import FactScorer
+
+fs = FactScorer(openai_key="...")
+
+scoreA = fs.get_score(topics, modelA_generations) # 0.667
+scoreB = fs.get_score(topics, modelB_generations) # 0.010
+```
+
+
 
 ## To use a custom knowledge source
 
