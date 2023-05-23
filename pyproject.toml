@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "factscore"
-version = "0.1.2"
+version = "0.1.3"
 description = "FactScore is an automatic evaluation metric for factual precision in long-form text generation. It uses large language models and retrieval to break down generations into atomic facts and then measure the correctness with respect to a knowledge source (like Wikipedia)."
 authors = ["Sewon Min <sewon@cs.washington.edu>", "Kalpesh Krishna <kalpesh@cs.umass.edu>", "Xinxi Lyu <alrope@cs.washington.edu>"]
 license = "MIT"
@@ -15,7 +15,7 @@ openai = "^0.27.7"
 rank-bm25 = "^0.2.2"
 spacy = "^3.5.3"
 pysqlite-binary = "^0.5.0"
-
+nltk = "^3.8.1"
 
 [build-system]
 requires = ["poetry-core"]
