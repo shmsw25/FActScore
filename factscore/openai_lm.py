@@ -5,6 +5,8 @@ import time
 import os
 import numpy as np
 
+
+
 class OpenAIModel(LM):
 
     def __init__(self, model_name, cache_file=None, key_path="api.key"):
@@ -42,7 +44,8 @@ class OpenAIModel(LM):
             # Get the output from the response
             output = response["choices"][0]["text"]
             return output, response
- 
+
+
 def call_ChatGPT(message, model_name="gpt-3.5-turbo", max_len=1024, temp=0.7):
     # call GPT-3 API until result is provided and then return it
     response = None
@@ -67,6 +70,7 @@ def call_ChatGPT(message, model_name="gpt-3.5-turbo", max_len=1024, temp=0.7):
             print("API error: %s (%d). Waiting %dsec" % (error, num_rate_errors, np.power(2, num_rate_errors)))
             time.sleep(np.power(2, num_rate_errors))
     return response
+
 
 def call_GPT3(prompt, model_name="text-davinci-003", max_len=512, temp=0.7, num_log_probs=0, echo=False):
     # call GPT-3 API until result is provided and then return it

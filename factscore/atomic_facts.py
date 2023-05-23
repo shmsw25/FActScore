@@ -5,16 +5,20 @@ import functools
 import string
 import spacy
 import sys
-from tqdm import tqdm
+import nltk
 import openai
 from rank_bm25 import BM25Okapi
 import os
 import time
 from nltk.tokenize import sent_tokenize
 
+from factscore.openai_lm import OpenAIModel
+
+nltk.download("punkt")
+
 
 class AtomicFactGenerator(object):
-    def __init__(self, key_path, demon_dir, model_name=None, gpt3_cache_dir=None):
+    def __init__(self, key_path, demon_dir, model_name=None, gpt3_cache_file=None):
 
         self.model = model_name
         if model_name:
@@ -22,18 +26,10 @@ class AtomicFactGenerator(object):
         else:
             self.preprocess_fn = None
         self.nlp = spacy.load("en_core_web_sm")
-        self.key_path = key_path
         self.is_bio = True
         self.demon_path = os.path.join(demon_dir, "demons.json" if self.is_bio else "demons_complex.json")
-        if gpt3_cache_dir is not None:
-            self.gpt3_cache_path = os.path.join(gpt3_cache_dir, "{}_{}_additional.json".format("bio" if self.is_bio else "complex", model_name))
-        else:
-            self.gpt3_cache_path = None
 
-        # load api key
-        with open(key_path, 'r') as f:
-            api_key = f.readline()
-        openai.api_key = api_key.strip()
+        self.openai_lm = OpenAIModel("InstructGPT", cache_file=gpt3_cache_file, key_path=key_path)
 
         # get the demos
         with open(self.demon_path, 'r') as f:
@@ -105,7 +101,6 @@ class AtomicFactGenerator(object):
 
         k = 1 if is_bio else 0
         n = 7 if is_bio else 8
-        batch_size = 8
 
         prompts = []
         prompt_to_sent = {}
@@ -131,11 +126,10 @@ class AtomicFactGenerator(object):
             prompts.append(prompt)
             prompt_to_sent[prompt] = sentence
 
-        for i in range(0, len(prompts), batch_size):
-            response = call_gpt3(prompts[i: i+batch_size])
-            for j in range(len(response["choices"])):
-                atoms[prompt_to_sent[prompts[i+j]]] = text_to_sentences(response["choices"][j]["text"])
-            
+        for prompt in prompts:
+            output, _ = self.openai_lm.generate(prompt)
+            atoms[prompt_to_sent[prompt]] = text_to_sentences(output)
+
         for key, value in demons.items():
             if key not in atoms:
                 atoms[key] = value
@@ -159,7 +153,7 @@ def preprocess_fn(generation, model):
             if is_invalid_paragraph_ppl(para):
                 break
             paragraphs.append(para.strip())
-        
+
         if len(paragraphs) == 0:
             return None
 
@@ -169,33 +163,8 @@ def preprocess_fn(generation, model):
 
     else:
         paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
-    
+
     return paragraphs
-
-
-def call_gpt3(prompt, model_name="text-davinci-003", max_len=512, temp=0.7, num_log_probs=0, echo=False):
-    # call GPT-3 API until result is provided and then return it
-    response = None
-    received = False
-
-    while not received:
-        try:
-            response = openai.Completion.create(model=model_name,
-                                                prompt=prompt,
-                                                max_tokens=max_len,
-                                                temperature=temp,
-                                                logprobs=num_log_probs,
-                                                echo=echo)
-            received = True
-        except:
-            error = sys.exc_info()[0]
-            if error == openai.error.InvalidRequestError:
-                # something is wrong: e.g. prompt too long
-                print(f"InvalidRequestError\nPrompt passed in:\n\n{prompt}\n\n")
-                assert False
-            print("API error:", error)
-            time.sleep(1)
-    return response
 
 def best_demos(query, bm25, demons_sents, k):
     tokenized_query = query.split(" ")
@@ -289,7 +258,7 @@ def postprocess_atomic_facts(_atomic_facts, para_breaks, nlp):
     atomic_facts = []
     new_atomic_facts = []
     new_para_breaks = []
-    
+
     for i, (sent, facts) in enumerate(_atomic_facts):
         sent = sent.strip()
         if len(sent.split())==1 and i not in para_breaks and i > 0:
@@ -320,7 +289,7 @@ def postprocess_atomic_facts(_atomic_facts, para_breaks, nlp):
                     for ent in entities:
                         if ent.startswith(new_ent):
                             pre_ent = ent
-                            break			
+                            break
                     if pre_ent is None:
                         do_pass = True
                         break
@@ -335,9 +304,9 @@ def postprocess_atomic_facts(_atomic_facts, para_breaks, nlp):
             assert entities==covered_entities
         except Exception:
             new_facts = facts # there is a bug in spacy entity linker, so just go with the previous facts
-        
+
         new_atomic_facts.append((sent, new_facts))
-    
+
     return new_atomic_facts, new_para_breaks
 
 def is_integer(s):

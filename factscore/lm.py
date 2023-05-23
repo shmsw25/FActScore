@@ -19,15 +19,15 @@ class LM(object):
 
         if cache_key in self.cache_dict:
             return self.cache_dict[cache_key]
-        
+
         if self.model is None:
             self.load_model()
-        
+
         if prompt.endswith(" True or False?\nAnswer:"):
             generated = self._generate(prompt, max_sequence_length=max_sequence_length, max_output_length=1)
         else:
             generated = self._generate(prompt, max_sequence_length=max_sequence_length, max_output_length=max_output_length)
-        
+
         self.cache_dict[cache_key] = generated
         self.add_n += 1
         return generated

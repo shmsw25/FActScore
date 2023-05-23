@@ -57,6 +57,7 @@ class FactScorer(object):
         assert name not in self.retrieval, f"{name} already registered"
         if db_path is None:
             db_path = os.path.join(self.cache_dir, f"{name}.db")
+
         if data_path is None:
             data_path = os.path.join(self.cache_dir, f"{name}.jsonl")
 
@@ -206,11 +207,11 @@ if __name__ == '__main__':
     parser.add_argument('--n_samples',
                         type=int,
                         default=None)
-    
+
     args = parser.parse_args()
 
     fs = FactScorer(args.model_name, args.cache_dir, args.openai_key)
-    
+
     tot = 0
     topics, generations, atomic_facts = [], [], []
     with open(args.data_path) as f:
@@ -229,10 +230,10 @@ if __name__ == '__main__':
                 generations.append(dp["output"])
             if args.n_samples is not None and tot==args.n_samples:
                 break
-    
+
     score = fs.get_score(topics=topics, generations=generations, atomic_facts=atomic_facts if args.use_atomic_facts else None, verbose=args.verbose)
     print (score)
-
+    fs.save_cache()
 
 
 
