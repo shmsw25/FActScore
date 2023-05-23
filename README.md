@@ -13,8 +13,9 @@ conda activate fs-env
 pip install -r requirements.txt
 ``` -->
 
+Make a new Python 3.7+ environment using `virtualenv` or `conda`.
+
 ```bash
-python3.7 -m virtualenv fs-venv
 pip install factscore
 python -m spacy download en_core_web_sm
 ```
@@ -27,7 +28,7 @@ python -m factscore.download_data
 
 Or, download it manually from this [Google Drive link](https://drive.google.com/drive/folders/1bLHGu_imkZVtX6O0mpZ-G0-4ofTLM1ZA?usp=sharing). Make a cache directory `.cache/factscore`, and place unzipped `demos` and `enwiki-20230401.db` in that directory.
 
-## Running the script with oracle atomic facts
+## Running FactScore
 
 ```bash
 python -m factscore.factscorer --data_path {data_path} --model_name {estimator_name} --cache_dir {cache_dir} --openai_key {openai_key}

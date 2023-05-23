@@ -63,3 +63,5 @@ inst-llama-7B.zip
 .cache
 fs-venv
 
+poetry.lock
+

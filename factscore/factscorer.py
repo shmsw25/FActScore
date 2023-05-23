@@ -3,7 +3,6 @@ import string
 import json
 import numpy as np
 import os
-import subprocess
 
 from tqdm import tqdm
 from factscore.atomic_facts import AtomicFactGenerator
@@ -57,10 +56,10 @@ class FactScorer(object):
             db_path = os.path.join(self.cache_dir, f"{name}.db")
         if data_path is None:
             data_path = os.path.join(self.cache_dir, f"{name}.jsonl")
-        
+
         cache_path = os.path.join(self.cache_dir, f"retrieval-{name}.json")
         embed_cache_path = os.path.join(self.cache_dir, f"retrieval-{name}.pkl")
-        
+
         self.db[name] = DocDB(db_path=db_path, data_path=data_path)
         self.retrieval[name] = Retrieval(self.db[name], cache_path, embed_cache_path, batch_size=self.batch_size)
         if "npm" in self.model_name:
@@ -73,12 +72,12 @@ class FactScorer(object):
     def get_score(self,
                   topics,
                   generations,
+                  atomic_facts,
                   knowledge_source=None,
-                  atomic_facts=None,
                   return_atomic_facts=False,
                   return_individual_decisions=False,
                   verbose=False):
-        
+
         if knowledge_source is None:
             # use the default one (enwiki-20230401)
             knowledge_source = "enwiki-20230401"
@@ -94,10 +93,7 @@ class FactScorer(object):
             assert type(topics)==type(generations)==list, "`topics` and `generations` should be lists."
             assert len(topics)==len(generations), "`topics` and `generations` should have the same length"
 
-        if atomic_facts is not None:
-            assert len(topics)==len(atomic_facts), "`topics` and `atomic_facts` should have the same length"
-        else:
-            raise NotImplementedError()
+        assert len(topics)==len(atomic_facts), "`topics` and `atomic_facts` should have the same length"
 
         if verbose:
             topics = tqdm(topics)
