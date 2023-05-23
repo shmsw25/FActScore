@@ -49,7 +49,8 @@ python -m factscore.factscorer \
     --data_path data/unlabeled/InstructGPT.jsonl \
     --model_name "retrieval+ChatGPT" \
     --cache_dir ".cache/factscore" \
-    --openai_key "api.key"
+    --openai_key "api.key" \
+    --verbose
 ```
 
 It uses `enwiki-20230401` by default, and will download the database from our Google drive.

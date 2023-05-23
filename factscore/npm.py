@@ -17,22 +17,22 @@ class NPM(LM):
         self.bm25 = bm25
         self.model_name = model_name
         self.model = None
-        
+
         self.tokenizer = AutoTokenizer.from_pretrained("facebook/" + self.model_name)
         self.mask_id = self.tokenizer.mask_token_id
-        
+
         with open("roberta_stopwords.txt", "r") as f:
             self.stopwords = set()
             for line in f:
                 self.stopwords.add(int(line.strip()))
-        
+
         super().__init__(cache_file=cache_file)
 
     def load_model(self):
         self.model = AutoModelForMaskedLM.from_pretrained("facebook/" + self.model_name)
         self.model.cuda()
         self.model.eval()
-    
+
     def save_cache(self):
         super().save_cache()
         self.bm25.save_cache()

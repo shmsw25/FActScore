@@ -101,7 +101,9 @@ class FactScorer(object):
             assert len(topics)==len(atomic_facts), "`topics` and `atomic_facts` should have the same length"
         else:
             if self.af_generator is None:
-                self.af_generator = AtomicFactGenerator(key_path=self.openai_key, demon_dir=os.path.join(self.cache_dir, "demos"))
+                self.af_generator = AtomicFactGenerator(key_path=self.openai_key,
+                                                        demon_dir=os.path.join(self.cache_dir, "demos"),
+                                                        gpt3_cache_file=os.path.join(self.cache_dir, "InstructGPT.pkl"))
 
             if verbose:
                 topics = tqdm(topics)
