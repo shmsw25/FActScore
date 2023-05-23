@@ -44,7 +44,6 @@ class LM(object):
             pickle.dump(self.cache_dict, f)
 
     def load_cache(self):
-        print (self.cache_file)
         if os.path.exists(self.cache_file):
             with open(self.cache_file, "rb") as f:
                 cache = pickle.load(f)
