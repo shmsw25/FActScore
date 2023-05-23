@@ -14,7 +14,7 @@ from factscore.retrieval import DocDB, Retrieval
 class FactScorer(object):
 
     def __init__(self,
-                 model_name="retrieval+llama+npm",
+                 model_name="retrieval+ChatGPT",
                  cache_dir=".cache/factscore",
                  openai_key="api.key",
                  batch_size=256):

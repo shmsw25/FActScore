@@ -35,9 +35,9 @@ python -m factscore.factscorer --data_path {data_path} --model_name {estimator_n
 ```
 
 - `data_path` can be something like `data/src-light/bio_ChatGPT_v0.2.jsonl` which is in a format we have been using so far. TODO for simplying the format and allowing it to take any topics/generations.
-- `model_name`: `retrieval+llama`, `retrieval+llama+npm`, `retrieval+ChatGPT`, `retrieval+ChatGPT+npm`
+- `model_name`: `retrieval+ChatGPT`, `retrieval+ChatGPT+npm`, two more configs (`retrieval+llama`, `retrieval+llama+npm`) coming soon!
 - `cache_dir`: `.cache/factscore` by default.
-- `openai_key`: File containing API Key, only needed when ChatGPT is being used.
+- `openai_key`: File containing API Key, needed when ChatGPT is being used.
 
 For example,
 
@@ -50,7 +50,8 @@ python -m factscore.factscorer \
 ```
 
 It uses `enwiki-20230401` by default, and will download the database from our Google drive.
-It also uses Inst-LLAMA, downloading from the Google Drive. TODO: need to release diff from LLAMA 7B only. Also need to allow users to specify their own LM path if they want to use a different LM.
+
+Instructions to use Instruct-LLAMA-7B or your own LM coming soon!
 
 ## To use a custom knowledge source.
 You need a `.jsonl` file where each line is a dictionary containing `title` and `text`. `text` can either be a string or a list of strings (e.g., sections).

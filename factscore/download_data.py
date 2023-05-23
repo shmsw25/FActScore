@@ -40,7 +40,6 @@ if __name__ == '__main__':
     download_file("1IseEAflk1qqV0z64eM60Fs3dTgnbgiyt", "demos.zip")
     download_file("1pUhBqQnrK9ZlgGdpP8LfPaG27yQRSIeT", "original_generation.zip")
     download_file("1mekls6OGOKLmt7gYtHs0WGf5oTamTNat", "enwiki-20230401.db")
-    download_file("1TAtyCI75xkqqVlcAFC3pUbsCn8h82vPw", "inst-llama-7B.zip")
 
     cache_dir = ".cache/factscore"
     if not os.path.exists(cache_dir):
