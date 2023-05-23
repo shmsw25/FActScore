@@ -34,16 +34,19 @@ Or, download it manually from this [Google Drive link](https://drive.google.com/
 python -m factscore.factscorer --data_path {data_path} --model_name {estimator_name} --cache_dir {cache_dir} --openai_key {openai_key}
 ```
 
-- `data_path` can be something like `data/src-light/bio_ChatGPT_v0.2.jsonl` which is in a format we have been using so far. TODO for simplying the format and allowing it to take any topics/generations.
+- `data_path` can be something like `data/unlabeled/InstructGPT.jsonl`. It should be a `.jsonl` format where each line contains `topic` (a topic entity that corresponds to the Wikipedia title) and `output` (a generation from the model).
 - `model_name`: `retrieval+ChatGPT`, `retrieval+ChatGPT+npm`, two more configs (`retrieval+llama`, `retrieval+llama+npm`) coming soon!
 - `cache_dir`: `.cache/factscore` by default.
-- `openai_key`: File containing API Key, needed when ChatGPT is being used.
+- `openai_key`: File containing OpenAI API Key.
+- `use_atomic_facts`: If specified, it uses model-generated atomic facts released as part of our data instead of running the atomic fact generator. You can't specify it if you are running new model generations.
+- `n_samples`: If specified, it runs the model on a subset of the data.
+- `verbose`: If specified, it shows the progress bar.
 
 For example,
 
 ```python
 python -m factscore.factscorer \
-    --data_path original_generation/v0.2/answers_mpt-7b_bio_test_addtional.jsonl \
+    --data_path data/unlabeled/InstructGPT.jsonl \
     --model_name "retrieval+ChatGPT" \
     --cache_dir ".cache/factscore" \
     --openai_key "api.key"

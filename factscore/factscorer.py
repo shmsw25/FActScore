@@ -25,10 +25,13 @@ class FactScorer(object):
         self.retrieval = {}
         self.npm = {}
         self.batch_size = batch_size # batch size for retrieval
+        self.openai_key = openai_key
 
         self.cache_dir = cache_dir
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
+
+        self.af_generator = None
 
         if "llama" in model_name:
             self.lm = CLM("inst-llama-7B",
@@ -72,7 +75,7 @@ class FactScorer(object):
     def get_score(self,
                   topics,
                   generations,
-                  atomic_facts,
+                  atomic_facts=None,
                   knowledge_source=None,
                   return_atomic_facts=False,
                   return_individual_decisions=False,
@@ -93,7 +96,26 @@ class FactScorer(object):
             assert type(topics)==type(generations)==list, "`topics` and `generations` should be lists."
             assert len(topics)==len(generations), "`topics` and `generations` should have the same length"
 
-        assert len(topics)==len(atomic_facts), "`topics` and `atomic_facts` should have the same length"
+        if atomic_facts is not None:
+            assert len(topics)==len(atomic_facts), "`topics` and `atomic_facts` should have the same length"
+        else:
+            if self.af_generator is None:
+                self.af_generator = AtomicFactGenerator(key_path=self.openai_key, demon_dir=os.path.join(self.cache_dir, "demos"))
+
+            if verbose:
+                topics = tqdm(topics)
+
+            new_topics, new_generations, new_atomic_facts = [], [], []
+            for topic, gen in zip(topics, generations):
+                curr_afs, _ = self.af_generator.run(gen)
+                curr_afs = [fact for _, facts in curr_afs for fact in facts]
+                if len(curr_afs)==0:
+                    # abstain from answering
+                    continue
+                new_topics.append(topic)
+                new_generations.append(gen)
+                new_atomic_facts.append(curr_afs)
+            topics, generations, atomic_facts = new_topics, new_generations, new_atomic_facts
 
         if verbose:
             topics = tqdm(topics)
@@ -107,7 +129,7 @@ class FactScorer(object):
             scores.append(score)
 
         if return_atomic_facts:
-            return np.mean(scores), [[d["atom"] for d in ds] for ds in decisions]
+            return np.mean(scores), atomic_facts
 
         if return_individual_decisions:
             return np.mean(scores), decisions
@@ -127,7 +149,6 @@ class FactScorer(object):
                 definition += context.strip()
                 if not definition[-1] in string.punctuation:
                     definition += "."
-                assert atom.endswith("."), atom
                 prompt = "{}\n\nInput: {} True or False?\nOutput:".format(definition.strip(), atom.strip())
                 output = self.lm.generate(prompt)
 
@@ -168,7 +189,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path',
                         type=str,
-                        default="data/src-light/bio_PerplexityAI_v0.1.jsonl")
+                        default="data/labeled/InstructGPT.jsonl")
     parser.add_argument('--model_name',
                         type=str,
                         default="retrieval+ChatGPT")
@@ -178,63 +199,40 @@ if __name__ == '__main__':
     parser.add_argument('--cache_dir',
                         type=str,
                         default=".cache/factscore/")
+    parser.add_argument('--use_atomic_facts',
+                        action="store_true")
+    parser.add_argument('--verbose',
+                        action="store_true")
+    parser.add_argument('--n_samples',
+                        type=int,
+                        default=None)
+    
     args = parser.parse_args()
 
-    def extract_topic(dp):
-        key_to_use = "prompt" if "prompt" in dp else "input"
-        assert dp[key_to_use].startswith("Question: Tell me a bio of "), dp[key_to_use]
-        topic = dp[key_to_use].split("\n")[0].split("Tell me a bio of")[-1].strip()
-        assert topic.endswith(".")
-        return topic[:-1]
-
-    fs = FactScorer(model_name=args.model_name, cache_dir=args.cache_dir, openai_key=args.openai_key)
-    af_generator = AtomicFactGenerator(key_path=args.openai_key, demon_dir=os.path.join(args.cache_dir, "demos"))
-
-    topics = []
-    generations = []
-    atomic_facts = []
-
+    fs = FactScorer(args.model_name, args.cache_dir, args.openai_key)
+    
     tot = 0
-    with open(args.data_path, "r") as f:
-        for line in tqdm(f, desc="Getting atomic facts..."):
-            tot += 1
+    topics, generations, atomic_facts = [], [], []
+    with open(args.data_path) as f:
+        for line in f:
             dp = json.loads(line)
-            gen = ""
-            facts = []
-            if "response" in dp and dp["response"] is not None:
-                # v0.1 files which have human written atomic facts
-                response = dp["response"]
-                for sent_idx, sent_dp in enumerate(response["fact_data"]):
-                    gen += sent_dp["orig_sentence"] + " "
-                    facts += sent_dp["orig_facts"]
-                topics.append(extract_topic(dp))
-                generations.append(gen)
-
-            elif "output" in dp and dp["output"] is not None:
-                # TODO: is processing para breaks critical for correct FactScore?
-                atomic_facts, para_breaks = af_generator.run(dp["output"])
-                for sent, afs in atomic_facts:
-                    gen += sent + " "
-                    facts.extend(afs)
-                topics.append(extract_topic(dp))
-
-            if facts:
-                for i, fact in enumerate(facts):
-                    # this should be manually fixed before releasing the data
-                    if not fact.endswith("."):
-                        facts[i] += "."
-
-                atomic_facts.append(facts)
-
-            if "ChatGPT" in args.model_name and tot == 100:
+            tot += 1
+            if args.use_atomic_facts:
+                assert "annotations" in dp, "You can specify `--use_atomic_facts` only when atomic facts are available in the input data already."
+                if dp["annotations"] is None:
+                    continue
+                topics.append(dp["topic"])
+                generations.append(dp["output"])
+                atomic_facts.append([atom["text"] for sent in dp["annotations"] for atom in sent["model-atomic-facts"]])
+            else:
+                topics.append(dp["topic"])
+                generations.append(dp["output"])
+            if args.n_samples is not None and tot==args.n_samples:
                 break
+    
+    score = fs.get_score(topics=topics, generations=generations, atomic_facts=atomic_facts if args.use_atomic_facts else None, verbose=args.verbose)
+    print (score)
 
-    score, decisions = fs.get_score(topics,
-                                    generations,
-                                    atomic_facts=atomic_facts,
-                                    return_individual_decisions=True,
-                                    verbose=True)
-    print ("%s\t%.1f" % (args.model_name, 100*score))
 
-    fs.save_cache()
+
 
