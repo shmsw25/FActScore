@@ -56,6 +56,13 @@ It uses `enwiki-20230401` by default, and will download the database from our Go
 
 Instructions to use Instruct-LLAMA-7B or your own LM coming soon!
 
+## To generate outputs from your own LM and evaluate them.
+
+There're two sets of prompt entities, `data/labeled/prompt_entities.txt` (183 entities) and `data/unlabeled/prompt_entities.txt` (500 entities). Each line contains the name of the person (which is also a corresponding Wikipedia title). You can use the labeled version if you want to be compatible with the data under `data/labeled` (Section 3 and Section 4.2 in the paper), and use the unlabeled version if you want to be compatible with the data under `data/unlabeled` (Section 4.3 in the paper).
+
+You can prompt your LM with your own prompt (we used `Question: Tell me a bio of <entity>.`) and create a .jsonl file, where each line has `topic` (entity name, exactly same as the one from `.txt` file) and `output` (generation from LM). This can be fed into `factscore.factscorer` using `--data_path`.
+
+
 ## To use a custom knowledge source.
 You need a `.jsonl` file where each line is a dictionary containing `title` and `text`. `text` can either be a string or a list of strings (e.g., sections).
 

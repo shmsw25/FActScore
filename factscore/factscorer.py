@@ -232,7 +232,7 @@ if __name__ == '__main__':
     
     score = fs.get_score(topics=topics, generations=generations, atomic_facts=atomic_facts if args.use_atomic_facts else None, verbose=args.verbose)
     print (score)
-
+    fs.save_cache()
 
 
 
