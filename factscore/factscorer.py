@@ -52,6 +52,8 @@ class FactScorer(object):
                 v.save_cache()
         for k, v in self.retrieval.items():
             v.save_cache()
+        if self.af_generator:
+            self.af_generator.save_cache()
 
     def register_knowledge_source(self, name="enwiki-20230401", db_path=None, data_path=None):
         assert name not in self.retrieval, f"{name} already registered"
@@ -78,14 +80,14 @@ class FactScorer(object):
                   generations,
                   atomic_facts=None,
                   knowledge_source=None,
-                  return_atomic_facts=False,
-                  return_individual_decisions=False,
+                  return_score_only=False,
                   verbose=False):
 
         if knowledge_source is None:
             # use the default one (enwiki-20230401)
             knowledge_source = "enwiki-20230401"
-            self.register_knowledge_source(knowledge_source)
+            if knowledge_source not in self.retrieval:
+                self.register_knowledge_source(knowledge_source)
         else:
             assert knowledge_source in self.retrieval, \
                 f"{knowledge_source} is not registered yet. Please use `register_knowledge_source()` function to register it with a database"
@@ -99,6 +101,7 @@ class FactScorer(object):
 
         if atomic_facts is not None:
             assert len(topics)==len(atomic_facts), "`topics` and `atomic_facts` should have the same length"
+            respond_ratio = 1.0
         else:
             if self.af_generator is None:
                 self.af_generator = AtomicFactGenerator(key_path=self.openai_key,
@@ -108,36 +111,39 @@ class FactScorer(object):
             if verbose:
                 topics = tqdm(topics)
 
-            new_topics, new_generations, new_atomic_facts = [], [], []
+            atomic_facts = []
             for topic, gen in zip(topics, generations):
                 curr_afs, _ = self.af_generator.run(gen)
                 curr_afs = [fact for _, facts in curr_afs for fact in facts]
                 if len(curr_afs)==0:
-                    # abstain from answering
+                    atomic_facts.append(None)
                     continue
-                new_topics.append(topic)
-                new_generations.append(gen)
-                new_atomic_facts.append(curr_afs)
-            topics, generations, atomic_facts = new_topics, new_generations, new_atomic_facts
-
+                atomic_facts.append(curr_afs)
+            
+            assert len(atomic_facts)==len(topics)
+            respond_ratio = np.mean([facts is not None for facts in atomic_facts])
+        
         if verbose:
             topics = tqdm(topics)
 
         scores = []
         decisions = []
         for topic, generation, facts in zip(topics, generations, atomic_facts):
+            if facts is None:
+                decisions.append(None)
+                continue
             decision = self._get_score(topic, generation, facts, knowledge_source)
             score = np.mean([d["is_supported"] for d in decision])
             decisions.append(decision)
             scores.append(score)
 
-        if return_atomic_facts:
-            return np.mean(scores), atomic_facts
+        if return_score_only:
+            return np.mean(scores)
 
-        if return_individual_decisions:
-            return np.mean(scores), decisions
-
-        return np.mean(scores)
+        return {"score": np.mean(scores),
+                "respond_ratio": respond_ratio,
+                "decisions": decisions,
+                "num_facts_per_response": np.mean([len(d) for d in decisions])}
 
     def _get_score(self, topic, generation, atomic_facts, knowledge_source):
         decisions = []
@@ -182,8 +188,7 @@ class FactScorer(object):
                 npprob = self.npm[knowledge_source].get_probabilty(topic, atom)
                 is_supported = npprob > 0.3
 
-            decisions.append({"atom": atom,
-                              "is_supported": is_supported})
+            decisions.append({"atom": atom, "is_supported": is_supported})
 
         return decisions
 
@@ -233,8 +238,13 @@ if __name__ == '__main__':
             if args.n_samples is not None and tot==args.n_samples:
                 break
 
-    score = fs.get_score(topics=topics, generations=generations, atomic_facts=atomic_facts if args.use_atomic_facts else None, verbose=args.verbose)
-    print (score)
+    out = fs.get_score(topics=topics,
+                       generations=generations,
+                       atomic_facts=atomic_facts if args.use_atomic_facts else None,
+                       verbose=args.verbose)
+    print ("FActScore=%.1f%%\nRespond ratio=%.1f%%\n# Atomic facts per response=%.1f" % (
+        100*out["score"], 100*out["respond_ratio"], out["num_facts_per_response"]
+    ))
     fs.save_cache()
 
 

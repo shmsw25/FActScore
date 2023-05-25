@@ -38,6 +38,9 @@ class AtomicFactGenerator(object):
         tokenized_corpus = [doc.split(" ") for doc in self.demons.keys()]
         self.bm25 = BM25Okapi(tokenized_corpus)
 
+    def save_cache(self):
+        self.openai_lm.save_cache()
+
     def run(self, generation):
         """Convert the generation into a set of atomic facts."""
         if self.preprocess_fn:
