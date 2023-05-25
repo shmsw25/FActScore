@@ -99,11 +99,9 @@ from factscore.factscorer import FactScorer
 
 fs = FactScorer(openai_key="...")
 
-scoreA = fs.get_score(topics, modelA_generations) # 0.667
-scoreB = fs.get_score(topics, modelB_generations) # 0.010
+scoreA = fs.get_score(topics, modelA_generations)["score"] # 0.667
+scoreB = fs.get_score(topics, modelB_generations)["score"] # 0.010
 ```
-
-
 
 ## To use a custom knowledge source
 
