@@ -45,6 +45,7 @@ This command does the following.
 - `--data_dir`: directory to store the knowledge source and example data. `.cache/factscore` by default.
 - `--model_dir`: directory to store Inst-LLAMA weights. `.cache/factscore` by default.
 
+
 ## Running FActScore using a command line
 
 We expect running FActScore costs about $1 of the API cost per 100 sentences. For instance, if you have 100 generations, each with 5 sentences on average, it costs $5 in total. 

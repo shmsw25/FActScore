@@ -141,6 +141,7 @@ if __name__ == '__main__':
     # download the roberta_stopwords.txt file
     subprocess.run(["wget https://raw.githubusercontent.com/shmsw25/FActScore/main/roberta_stopwords.txt"], shell=True)
 
-    # move the files to the cache directory
+    # move the files to the data directory
     subprocess.run(["mv demos %s" % args.data_dir], shell=True)
     subprocess.run(["mv enwiki-20230401.db %s" % args.data_dir], shell=True)
+
