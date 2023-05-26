@@ -6,6 +6,17 @@
 
 This is the official release accompanying our preprint, [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation](https://tinyurl.com/FActScore). FActScore is available as a PIP package as well.
 
+If you find FActScore useful, please cite:
+```
+@article{ factscore,
+    title={ {FActScore}: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation }, 
+    author={ Min, Sewon and Krishna, Kalpesh and Lyu, Xinxi and Lewis, Mike and Yih, Wen-tau and Koh, Pang Wei and Iyyer, Mohit and Zettlemoyer, Luke and Hajishirzi, Hannaneh },
+    year={ 2023 },
+    journal={ arXiv preprint arXiv:2305.14251 },
+    url={ https://arxiv.org/abs/2305.14251 }
+}
+```
+
 ## Install
 <!-- ```
 conda create -n fs-env python=3.9
@@ -79,29 +90,22 @@ Alternatively, you can create a .jsonl file, where each line has `topic` (entity
 
 We recommend using (A) `FactScorer(model_name="retrieval+ChatGPT")` (default) or (B) `FactScorer(model_name="retrieval+llama+npm")`. They have 0.99 Pearson correlation. Here're results of a range of models, which you can easily reproduce through [these command lines](#Running-FActScore-using-a-command-line).
 
-| Model | FActScore from (A) | FActScore from (B) |
-|---|---|---|
-| [GPT-4](https://arxiv.org/abs/2303.08774) | 73.1 | 59.9 |
-| [ChatGPT](https://openai.com/blog/chatgpt) | 71.6 | 60.4 |
-| [Alpaca 65B](https://crfm.stanford.edu/2023/03/13/alpaca.html) | 55.6 | 46.3 |
-| [InstructGPT](https://openai.com/research/instruction-following) | 52.8 | 41.7 |
-| [Alpaca 13B](https://crfm.stanford.edu/2023/03/13/alpaca.html) | 47.7 | 40.3 |
-| [Vicuna 13B](https://lmsys.org/blog/2023-03-30-vicuna/) | 46.6 | 40.7 |
-| [Alpaca 7B](https://crfm.stanford.edu/2023/03/13/alpaca.html) | 39.7 | 36.5 |
-| [Vicuna 7B](https://lmsys.org/blog/2023-03-30-vicuna/) | 38.9 | 36.9 |
-| [MPT Chat 7B](https://www.mosaicml.com/blog/mpt-7b) | 30.1 | 27.9 |
-| [Oasst Pythia 12B](https://huggingface.co/OpenAssistant/oasst-sft-1-pythia-12b) | 25.1 | 20.8 |
-| [Dolly 12B](https://huggingface.co/databricks/dolly-v2-12b) | 21.7 | 17.1 |
-| [StableLM tuned 7B](https://huggingface.co/stabilityai/stablelm-tuned-alpha-7b) | 17.3 | 16.3 |
+| Model | % respond | # facts | FActScore from (A) | FActScore from (B) |
+|---|---|---|---|---|
+| [GPT-4](https://arxiv.org/abs/2303.08774)                                         | 88.2 | 60.8 | 73.1 | 59.9 |
+| [ChatGPT](https://openai.com/blog/chatgpt)                                        | 84.2 | 37.0 | 71.6 | 60.4 |
+| [Alpaca 65B](https://crfm.stanford.edu/2023/03/13/alpaca.html)                    | 100.0 | 17.1 | 55.6 | 46.3 |
+| [InstructGPT](https://openai.com/research/instruction-following)                  | 99.8 | 27.7 | 52.8 | 41.7 |
+| [Alpaca 13B](https://crfm.stanford.edu/2023/03/13/alpaca.html)                    | 100.0 | 16.6 | 47.7 | 40.3 |
+| [Vicuna 13B](https://lmsys.org/blog/2023-03-30-vicuna/)                           | 76.6 | 50.9 | 46.6 | 40.7 |
+| [Alpaca 7B](https://crfm.stanford.edu/2023/03/13/alpaca.html)                     | 100.0 | 17.4 | 39.7 | 36.5 |
+| [Vicuna 7B](https://lmsys.org/blog/2023-03-30-vicuna/)                            | 91.0 | 45.6 | 38.9 | 36.9 |
+| [MPT Chat 7B](https://www.mosaicml.com/blog/mpt-7b)                               | 88.8 | 37.3 | 30.1 | 27.9 |
+| [Oasst Pythia 12B](https://huggingface.co/OpenAssistant/oasst-sft-1-pythia-12b)   | 100.0 | 39.7 | 25.1 | 20.8 |
+| [Dolly 12B](https://huggingface.co/databricks/dolly-v2-12b)                       | 100.0 | 24.6 | 21.7 | 17.1 |
+| [StableLM tuned 7B](https://huggingface.co/stabilityai/stablelm-tuned-alpha-7b)   | 66.6 | 38.0 | 17.3 | 16.3 |
 
-```python
-from factscore.factscorer import FactScorer
-
-fs = FactScorer(openai_key="...")
-
-scoreA = fs.get_score(topics, modelA_generations)["score"] # 0.667
-scoreB = fs.get_score(topics, modelB_generations)["score"] # 0.010
-```
+`% respond` (% of responding instead of abstaining from answering) and `# facts` (# of atomic facts per valid response) indicate "factual recall" (how many pieces of information the model gives) and FActScore indicates "factual precision" (how accurate each piece of information the model gives is).
 
 ## To use a custom knowledge source
 
