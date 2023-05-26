@@ -23,8 +23,10 @@ python -m spacy download en_core_web_sm
 ## Download the data
 
 ```bash
-python -m factscore.download_data
+python -m factscore.download_data --cache_dir ".cache/factscore" --llama_7B_HF_path "llama-7B"
 ```
+
+The LLAMA model requires having access to HuggingFace weights of the LLAMA-7B model, which are added to the `--llama_7B_HF_path` flag. Follow [this guide](https://huggingface.co/docs/transformers/main/model_doc/llama) in order to obtain those weights. Skip the `--llama_7B_HF_path` if you would only like to use the ChatGPT version of FActScore.
 
 Or, download it manually from this [Google Drive link](https://drive.google.com/drive/folders/1bLHGu_imkZVtX6O0mpZ-G0-4ofTLM1ZA?usp=sharing). Make a cache directory `.cache/factscore`, and place unzipped `demos` and `enwiki-20230401.db` in that directory.
 
