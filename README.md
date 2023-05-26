@@ -42,8 +42,8 @@ This command does the following.
 2. Take the LLAMA 7B model and reconstruct Inst-LLAMA. This requires having access to HuggingFace weights of the LLAMA-7B model, which are added to the `--llama_7B_HF_path` flag. Follow [this guide](https://huggingface.co/docs/transformers/main/model_doc/llama) in order to obtain those weights. Skip the `--llama_7B_HF_path` if you would only like to use the ChatGPT version of FActScore.
 
 **Optional flags**:
-- `data_dir`: directory to store the knowledge source and example data. `.cache/factscore` by default.
-- `model_dir`: directory to store Inst-LLAMA weights. `.cache/factscore` by default.
+- `--data_dir`: directory to store the knowledge source and example data. `.cache/factscore` by default.
+- `--model_dir`: directory to store Inst-LLAMA weights. `.cache/factscore` by default.
 
 ## Running FActScore using a command line
 
@@ -53,18 +53,18 @@ We expect running FActScore costs about $1 of the API cost per 100 sentences. Fo
 python -m factscore.factscorer --input_path {input_path} --model_name {estimator_name} --openai_key {openai_key}
 ```
 
-- `input_path` can be something like `data/unlabeled/InstructGPT.jsonl`. It should be a `.jsonl` format where each line contains `topic` (a topic entity that corresponds to the Wikipedia title) and `output` (a generation from the model).
-- `model_name`: `retrieval+ChatGPT` and `retrieval+llama+npm` (You can also use `retrieval+ChatGPT+npm` or `retrieval+llama` but we recommend the former two.)
-- `openai_key`: File containing OpenAI API Key.
+- `--input_path` can be something like `data/unlabeled/InstructGPT.jsonl`. It should be a `.jsonl` format where each line contains `topic` (a topic entity that corresponds to the Wikipedia title) and `output` (a generation from the model).
+- `--model_name`: `retrieval+ChatGPT` and `retrieval+llama+npm` (You can also use `retrieval+ChatGPT+npm` or `retrieval+llama` but we recommend the former two.)
+- `--openai_key`: File containing OpenAI API Key.
 
 **Optional flags**:
-- `data_dir`: Directory containing knowledge source, etc. `.cache/factscore` by default.
-- `model_dir`: Directory containing Inst-LLAMA weights. Skip if your `model_name` doesn't include `llama`. `.cache/factscore` by default.
-- `cache_dir`: Directory containing cache from API/models. `.cache/factscore` by default.
-- `use_atomic_facts`: If specified, it uses model-generated atomic facts released as part of our data instead of running the atomic fact generator. This will allow reproducing our results with no (or little if it still uses ChatGPT) cost. You can't specify it if you are running new model generations.
-- `n_samples`: If specified, it runs the model on a subset of the data.
-- `verbose`: If specified, it shows the progress bar.
-- `print_rate_limit_error`: It specified, it prints out rate limit errors from OpenAI API.
+- `--data_dir`: Directory containing knowledge source, etc. `.cache/factscore` by default.
+- `--model_dir`: Directory containing Inst-LLAMA weights. Skip if your `model_name` doesn't include `llama`. `.cache/factscore` by default.
+- `--cache_dir`: Directory containing cache from API/models. `.cache/factscore` by default.
+- `--use_atomic_facts`: If specified, it uses model-generated atomic facts released as part of our data instead of running the atomic fact generator. This will allow reproducing our results with no (or little if it still uses ChatGPT) cost. You can't specify it if you are running new model generations.
+- `--n_samples`: If specified, it runs the model on a subset of the data.
+- `--verbose`: If specified, it shows the progress bar.
+- `--print_rate_limit_error`: It specified, it prints out rate limit errors from OpenAI API.
 
 This command uses the English Wikipedia from 2023/04/01 as a knowledge source. See [this section](#To-use-a-custom-knowledge-source) to use your own database as a knowledge source!
 
