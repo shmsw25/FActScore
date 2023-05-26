@@ -135,6 +135,9 @@ if __name__ == '__main__':
     if args.llama_7B_HF_path:
         recover_instruct_llama(args.llama_7B_HF_path, os.path.join(args.cache_dir, "inst-llama-7B"))
 
+    # download the roberta_stopwords.txt file
+    subprocess.run(["wget https://raw.githubusercontent.com/shmsw25/FActScore/main/roberta_stopwords.txt"], shell=True)
+
     # move the files to the cache directory
     subprocess.run(["mv demos %s" % args.cache_dir], shell=True)
     subprocess.run(["mv enwiki-20230401.db %s" % args.cache_dir], shell=True)
