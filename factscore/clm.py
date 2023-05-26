@@ -45,7 +45,6 @@ class CLM(LM):
         scores = []
         for curr_input_ids in input_ids:
             if len(curr_input_ids) > max_sequence_length - max_output_length:
-                print("length exceeded {} ({})!".format(max_sequence_length, len(curr_input_ids)))
                 curr_input_ids = curr_input_ids[-(max_sequence_length - max_output_length):]
             curr_input_ids = torch.LongTensor([curr_input_ids]).cuda()
             gen_outputs = self.model.generate(
