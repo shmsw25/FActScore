@@ -38,10 +38,10 @@ python -m factscore.factscorer --input_path {input_path} --data_dir {data_dir} -
 
 - `input_path` can be something like `data/unlabeled/InstructGPT.jsonl`. It should be a `.jsonl` format where each line contains `topic` (a topic entity that corresponds to the Wikipedia title) and `output` (a generation from the model).
 - `model_name`: `retrieval+ChatGPT`, `retrieval+ChatGPT+npm`, two more configs (`retrieval+llama`, `retrieval+llama+npm`) coming soon!
-- `data_dir`: Directory containing knowledge source, etc. `data` by default.
+- `data_dir`: Directory containing knowledge source, etc. `.cache/factscore` by default.
 - `cache_dir`: Directory containing cache from API/models. `.cache/factscore` by default.
 - `openai_key`: File containing OpenAI API Key.
-- `use_atomic_facts`: If specified, it uses model-generated atomic facts released as part of our data instead of running the atomic fact generator. You can't specify it if you are running new model generations.
+- `use_atomic_facts`: If specified, it uses model-generated atomic facts released as part of our data instead of running the atomic fact generator. This will allow reproducing our results with no (or little if it still uses ChatGPT) cost. You can't specify it if you are running new model generations.
 - `n_samples`: If specified, it runs the model on a subset of the data.
 - `verbose`: If specified, it shows the progress bar.
 
@@ -51,7 +51,7 @@ For example,
 python -m factscore.factscorer \
     --input_path data/unlabeled/InstructGPT.jsonl \
     --model_name "retrieval+ChatGPT" \
-    --data_dir "data" \
+    --data_dir ".cache/factscore" \
     --cache_dir ".cache/factscore" \
     --openai_key "api.key" \
     --verbose

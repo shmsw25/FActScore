@@ -16,7 +16,7 @@ class FactScorer(object):
 
     def __init__(self,
                  model_name="retrieval+ChatGPT",
-                 data_dir="data",
+                 data_dir=".cache/factscore",
                  cache_dir=".cache/factscore",
                  openai_key="api.key",
                  batch_size=256):
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                         default="api.key")
     parser.add_argument('--data_dir',
                         type=str,
-                        default="data/")
+                        default=".cache/factscore/")
     parser.add_argument('--cache_dir',
                         type=str,
                         default=".cache/factscore/")
