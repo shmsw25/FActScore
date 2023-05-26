@@ -3,6 +3,7 @@ import string
 import json
 import numpy as np
 import os
+import logging
 
 from tqdm import tqdm
 from factscore.atomic_facts import AtomicFactGenerator
@@ -15,6 +16,7 @@ class FactScorer(object):
 
     def __init__(self,
                  model_name="retrieval+ChatGPT",
+                 data_dir="data",
                  cache_dir=".cache/factscore",
                  openai_key="api.key",
                  batch_size=256):
@@ -27,6 +29,7 @@ class FactScorer(object):
         self.batch_size = batch_size # batch size for retrieval
         self.openai_key = openai_key
 
+        self.data_dir = data_dir
         self.cache_dir = cache_dir
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
@@ -56,10 +59,10 @@ class FactScorer(object):
     def register_knowledge_source(self, name="enwiki-20230401", db_path=None, data_path=None):
         assert name not in self.retrieval, f"{name} already registered"
         if db_path is None:
-            db_path = os.path.join(self.cache_dir, f"{name}.db")
+            db_path = os.path.join(self.data_dir, f"{name}.db")
 
         if data_path is None:
-            data_path = os.path.join(self.cache_dir, f"{name}.jsonl")
+            data_path = os.path.join(self.data_dir, f"{name}.jsonl")
 
         cache_path = os.path.join(self.cache_dir, f"retrieval-{name}.json")
         embed_cache_path = os.path.join(self.cache_dir, f"retrieval-{name}.pkl")
@@ -101,7 +104,7 @@ class FactScorer(object):
         else:
             if self.af_generator is None:
                 self.af_generator = AtomicFactGenerator(key_path=self.openai_key,
-                                                        demon_dir=os.path.join(self.cache_dir, "demos"),
+                                                        demon_dir=os.path.join(self.data_dir, "demos"),
                                                         gpt3_cache_file=os.path.join(self.cache_dir, "InstructGPT.pkl"))
 
             if verbose:
@@ -196,7 +199,7 @@ class FactScorer(object):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_path',
+    parser.add_argument('--input_path',
                         type=str,
                         default="data/labeled/InstructGPT.jsonl")
     parser.add_argument('--model_name',
@@ -205,24 +208,35 @@ if __name__ == '__main__':
     parser.add_argument('--openai_key',
                         type=str,
                         default="api.key")
+    parser.add_argument('--data_dir',
+                        type=str,
+                        default="data/")
     parser.add_argument('--cache_dir',
                         type=str,
                         default=".cache/factscore/")
     parser.add_argument('--use_atomic_facts',
                         action="store_true")
     parser.add_argument('--verbose',
-                        action="store_true")
+                        action="store_true",
+                        help="for printing out the progress bar")
+    parser.add_argument('--print_rate_limit_error',
+                        action="store_true",
+                        help="for printing out rate limit error when using OpenAI keys")
     parser.add_argument('--n_samples',
                         type=int,
                         default=None)
 
     args = parser.parse_args()
 
-    fs = FactScorer(args.model_name, args.cache_dir, args.openai_key)
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(message)s',
+                        datefmt='%m/%d/%Y %H:%M:%S',
+                        level=logging.ERROR if args.print_rate_limit_error else logging.CRITICAL)
+    
+    fs = FactScorer(args.model_name, args.data_dir, args.cache_dir, args.openai_key)
 
     tot = 0
     topics, generations, atomic_facts = [], [], []
-    with open(args.data_path) as f:
+    with open(args.input_path) as f:
         for line in f:
             dp = json.loads(line)
             tot += 1
@@ -243,9 +257,9 @@ if __name__ == '__main__':
                        generations=generations,
                        atomic_facts=atomic_facts if args.use_atomic_facts else None,
                        verbose=args.verbose)
-    print ("FActScore=%.1f%%\nRespond ratio=%.1f%%\n# Atomic facts per response=%.1f" % (
-        100*out["score"], 100*out["respond_ratio"], out["num_facts_per_response"]
-    ))
+    logging.critical("FActScore=%.1f%%" % (100*out["score"]))
+    logging.critical("Respond ratio=%.1f%%" % (100*out["respond_ratio"]))
+    logging.critical("# Atomic facts per response=%.1f" % (out["num_facts_per_response"]))
 
 
 

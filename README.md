@@ -30,13 +30,16 @@ Or, download it manually from this [Google Drive link](https://drive.google.com/
 
 ## Running FActScore using a command line
 
+We expect running FActScore costs about $1 of the API cost per 100 sentences. For instance, if you have 100 generations, each with 5 sentences on average, it costs $5 in total. 
+
 ```bash
-python -m factscore.factscorer --data_path {data_path} --model_name {estimator_name} --cache_dir {cache_dir} --openai_key {openai_key}
+python -m factscore.factscorer --input_path {input_path} --data_dir {data_dir} --model_name {estimator_name} --cache_dir {cache_dir} --openai_key {openai_key}
 ```
 
-- `data_path` can be something like `data/unlabeled/InstructGPT.jsonl`. It should be a `.jsonl` format where each line contains `topic` (a topic entity that corresponds to the Wikipedia title) and `output` (a generation from the model).
+- `input_path` can be something like `data/unlabeled/InstructGPT.jsonl`. It should be a `.jsonl` format where each line contains `topic` (a topic entity that corresponds to the Wikipedia title) and `output` (a generation from the model).
 - `model_name`: `retrieval+ChatGPT`, `retrieval+ChatGPT+npm`, two more configs (`retrieval+llama`, `retrieval+llama+npm`) coming soon!
-- `cache_dir`: `.cache/factscore` by default.
+- `data_dir`: Directory containing knowledge source, etc. `data` by default.
+- `cache_dir`: Directory containing cache from API/models. `.cache/factscore` by default.
 - `openai_key`: File containing OpenAI API Key.
 - `use_atomic_facts`: If specified, it uses model-generated atomic facts released as part of our data instead of running the atomic fact generator. You can't specify it if you are running new model generations.
 - `n_samples`: If specified, it runs the model on a subset of the data.
@@ -46,8 +49,9 @@ For example,
 
 ```python
 python -m factscore.factscorer \
-    --data_path data/unlabeled/InstructGPT.jsonl \
+    --input_path data/unlabeled/InstructGPT.jsonl \
     --model_name "retrieval+ChatGPT" \
+    --data_dir "data" \
     --cache_dir ".cache/factscore" \
     --openai_key "api.key" \
     --verbose
