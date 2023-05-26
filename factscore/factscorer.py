@@ -52,8 +52,6 @@ class FactScorer(object):
                 v.save_cache()
         for k, v in self.retrieval.items():
             v.save_cache()
-        if self.af_generator:
-            self.af_generator.save_cache()
 
     def register_knowledge_source(self, name="enwiki-20230401", db_path=None, data_path=None):
         assert name not in self.retrieval, f"{name} already registered"
@@ -80,7 +78,6 @@ class FactScorer(object):
                   generations,
                   atomic_facts=None,
                   knowledge_source=None,
-                  return_score_only=False,
                   verbose=False):
 
         if knowledge_source is None:
@@ -101,7 +98,6 @@ class FactScorer(object):
 
         if atomic_facts is not None:
             assert len(topics)==len(atomic_facts), "`topics` and `atomic_facts` should have the same length"
-            respond_ratio = 1.0
         else:
             if self.af_generator is None:
                 self.af_generator = AtomicFactGenerator(key_path=self.openai_key,
@@ -117,12 +113,16 @@ class FactScorer(object):
                 curr_afs = [fact for _, facts in curr_afs for fact in facts]
                 if len(curr_afs)==0:
                     atomic_facts.append(None)
-                    continue
-                atomic_facts.append(curr_afs)
+                else:
+                    atomic_facts.append(curr_afs)
+                if len(atomic_facts) % 10 == 0:
+                    self.af_generator.save_cache()
             
             assert len(atomic_facts)==len(topics)
-            respond_ratio = np.mean([facts is not None for facts in atomic_facts])
+            self.af_generator.save_cache()
         
+        respond_ratio = np.mean([facts is not None for facts in atomic_facts])
+
         if verbose:
             topics = tqdm(topics)
 
@@ -131,14 +131,15 @@ class FactScorer(object):
         for topic, generation, facts in zip(topics, generations, atomic_facts):
             if facts is None:
                 decisions.append(None)
-                continue
-            decision = self._get_score(topic, generation, facts, knowledge_source)
-            score = np.mean([d["is_supported"] for d in decision])
-            decisions.append(decision)
-            scores.append(score)
-
-        if return_score_only:
-            return np.mean(scores)
+            else:
+                decision = self._get_score(topic, generation, facts, knowledge_source)
+                score = np.mean([d["is_supported"] for d in decision])
+                decisions.append(decision)
+                scores.append(score)
+                if len(scores) % 10 == 0:
+                    self.save_cache()
+        
+        self.save_cache()
 
         return {"score": np.mean(scores),
                 "respond_ratio": respond_ratio,
@@ -245,7 +246,6 @@ if __name__ == '__main__':
     print ("FActScore=%.1f%%\nRespond ratio=%.1f%%\n# Atomic facts per response=%.1f" % (
         100*out["score"], 100*out["respond_ratio"], out["num_facts_per_response"]
     ))
-    fs.save_cache()
 
 
 
