@@ -69,7 +69,10 @@ fs = FactScorer(openai_key="...")
 
 # topics: list of strings (human entities used to generate bios)
 # generations: list of strings (model generations)
-score = fs.get_score(topics, generations)
+out = fs.get_score(topics, generations)
+print (out["score"]) # FActScore
+print (out["respond_ratio"]) # % of responding (not abstaining from answering)
+print (out["num_facts_per_response"]) # average number of atomic facts per response
 ```
 
 Alternatively, you can create a .jsonl file, where each line has `topic` (entity name, exactly same as the one from `.txt` file) and `output` (generation from LM), and then use a command line [above](#Running-FActScore-using-a-command-line).
@@ -96,11 +99,9 @@ from factscore.factscorer import FactScorer
 
 fs = FactScorer(openai_key="...")
 
-scoreA = fs.get_score(topics, modelA_generations) # 0.667
-scoreB = fs.get_score(topics, modelB_generations) # 0.010
+scoreA = fs.get_score(topics, modelA_generations)["score"] # 0.667
+scoreB = fs.get_score(topics, modelB_generations)["score"] # 0.010
 ```
-
-
 
 ## To use a custom knowledge source
 
@@ -121,7 +122,10 @@ fs.register_knowledge_source(name_of_your_knowledge_source,
                              db_path=path_to_output_db_file)
 
 # now, when you compute a score, specify knowledge source to use
-score = fs.get_score(topics, generations, knowledge_source=name_of_your_knowledge_source)
+out = fs.get_score(topics, generations, knowledge_source=name_of_your_knowledge_source)
+print (out["score"]) # FActScore
+print (out["respond_ratio"]) # % of responding (not abstaining from answering)
+print (out["num_facts_per_response"]) # average number of atomic facts per response
 ```
 
 
