@@ -17,6 +17,7 @@ class FactScorer(object):
     def __init__(self,
                  model_name="retrieval+ChatGPT",
                  data_dir=".cache/factscore",
+                 model_dir=".cache/factscore",
                  cache_dir=".cache/factscore",
                  openai_key="api.key",
                  batch_size=256):
@@ -38,7 +39,7 @@ class FactScorer(object):
 
         if "llama" in model_name:
             self.lm = CLM("inst-llama-7B",
-                          model_dir=os.path.join(cache_dir, "inst-llama-7B"),
+                          model_dir=os.path.join(model_dir, "inst-llama-7B"),
                           cache_file=os.path.join(cache_dir, "inst-llama-7B.pkl"))
         elif "ChatGPT" in model_name:
             self.lm = OpenAIModel("ChatGPT",
@@ -211,6 +212,9 @@ if __name__ == '__main__':
     parser.add_argument('--data_dir',
                         type=str,
                         default=".cache/factscore/")
+    parser.add_argument('--model_dir',
+                        type=str,
+                        default=".cache/factscore/")
     parser.add_argument('--cache_dir',
                         type=str,
                         default=".cache/factscore/")
@@ -232,7 +236,11 @@ if __name__ == '__main__':
                         datefmt='%m/%d/%Y %H:%M:%S',
                         level=logging.ERROR if args.print_rate_limit_error else logging.CRITICAL)
     
-    fs = FactScorer(args.model_name, args.data_dir, args.cache_dir, args.openai_key)
+    fs = FactScorer(model_name=args.model_name,
+                    data_dir=args.data_dir,
+                    model_dir=args.model_dir,
+                    cache_dir=args.cache_dir,
+                    openai_key=args.openai_key)
 
     tot = 0
     topics, generations, atomic_facts = [], [], []

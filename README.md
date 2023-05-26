@@ -34,44 +34,39 @@ python -m spacy download en_core_web_sm
 ## Download the data
 
 ```bash
-python -m factscore.download_data --cache_dir ".cache/factscore" --llama_7B_HF_path "llama-7B"
+python -m factscore.download_data --llama_7B_HF_path "llama-7B"
 ```
 
-The LLAMA model requires having access to HuggingFace weights of the LLAMA-7B model, which are added to the `--llama_7B_HF_path` flag. Follow [this guide](https://huggingface.co/docs/transformers/main/model_doc/llama) in order to obtain those weights. Skip the `--llama_7B_HF_path` if you would only like to use the ChatGPT version of FActScore.
+This command does the following.
+1. Download the knowledge source and example data.
+2. Take the LLAMA 7B model and reconstruct Inst-LLAMA. This requires having access to HuggingFace weights of the LLAMA-7B model, which are added to the `--llama_7B_HF_path` flag. Follow [this guide](https://huggingface.co/docs/transformers/main/model_doc/llama) in order to obtain those weights. Skip the `--llama_7B_HF_path` if you would only like to use the ChatGPT version of FActScore.
 
-Or, download it manually from this [Google Drive link](https://drive.google.com/drive/folders/1bLHGu_imkZVtX6O0mpZ-G0-4ofTLM1ZA?usp=sharing). Make a cache directory `.cache/factscore`, and place unzipped `demos` and `enwiki-20230401.db` in that directory.
+**Optional flags**:
+- `data_dir`: directory to store the knowledge source and example data. `.cache/factscore` by default.
+- `model_dir`: directory to store Inst-LLAMA weights. `.cache/factscore` by default.
 
 ## Running FActScore using a command line
 
 We expect running FActScore costs about $1 of the API cost per 100 sentences. For instance, if you have 100 generations, each with 5 sentences on average, it costs $5 in total. 
 
 ```bash
-python -m factscore.factscorer --input_path {input_path} --data_dir {data_dir} --model_name {estimator_name} --cache_dir {cache_dir} --openai_key {openai_key}
+python -m factscore.factscorer --input_path {input_path} --model_name {estimator_name} --openai_key {openai_key}
 ```
 
 - `input_path` can be something like `data/unlabeled/InstructGPT.jsonl`. It should be a `.jsonl` format where each line contains `topic` (a topic entity that corresponds to the Wikipedia title) and `output` (a generation from the model).
-- `model_name`: `retrieval+ChatGPT`, `retrieval+ChatGPT+npm`, two more configs (`retrieval+llama`, `retrieval+llama+npm`) coming soon!
-- `data_dir`: Directory containing knowledge source, etc. `.cache/factscore` by default.
-- `cache_dir`: Directory containing cache from API/models. `.cache/factscore` by default.
+- `model_name`: `retrieval+ChatGPT` and `retrieval+llama+npm` (You can also use `retrieval+ChatGPT+npm` or `retrieval+llama` but we recommend the former two.)
 - `openai_key`: File containing OpenAI API Key.
+
+**Optional flags**:
+- `data_dir`: Directory containing knowledge source, etc. `.cache/factscore` by default.
+- `model_dir`: Directory containing Inst-LLAMA weights. Skip if your `model_name` doesn't include `llama`. `.cache/factscore` by default.
+- `cache_dir`: Directory containing cache from API/models. `.cache/factscore` by default.
 - `use_atomic_facts`: If specified, it uses model-generated atomic facts released as part of our data instead of running the atomic fact generator. This will allow reproducing our results with no (or little if it still uses ChatGPT) cost. You can't specify it if you are running new model generations.
 - `n_samples`: If specified, it runs the model on a subset of the data.
 - `verbose`: If specified, it shows the progress bar.
+- `print_rate_limit_error`: It specified, it prints out rate limit errors from OpenAI API.
 
-For example,
-
-```python
-python -m factscore.factscorer \
-    --input_path data/unlabeled/InstructGPT.jsonl \
-    --model_name "retrieval+ChatGPT" \
-    --data_dir ".cache/factscore" \
-    --cache_dir ".cache/factscore" \
-    --openai_key "api.key" \
-    --verbose
-```
-It uses `enwiki-20230401` by default, and will download the database from our Google drive.
-
-Instructions to use Instruct-LLAMA-7B or your own LM coming soon!
+This command uses the English Wikipedia from 2023/04/01 as a knowledge source. See [this section](#To-use-a-custom-knowledge-source) to use your own database as a knowledge source!
 
 ## To evaluate your own LM
 
