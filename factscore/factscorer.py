@@ -260,7 +260,6 @@ if __name__ == '__main__':
                 generations.append(dp["output"])
             if args.n_samples is not None and tot==args.n_samples:
                 break
-
     out = fs.get_score(topics=topics,
                        generations=generations,
                        atomic_facts=atomic_facts if args.use_atomic_facts else None,

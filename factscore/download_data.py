@@ -128,8 +128,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.cache_dir):
-        os.makedirs(args.cache_dir)
+    if not os.path.exists(args.model_dir):
+        os.makedirs(args.model_dir)
+    
+    if not os.path.exists(args.data_dir):
+        os.makedirs(args.data_dir)
 
     download_file("1IseEAflk1qqV0z64eM60Fs3dTgnbgiyt", "demos.zip", args.data_dir)
     download_file("1enz1PxwxeMr4FRF9dtpCPXaZQCBejuVF", "data.zip", args.data_dir)
