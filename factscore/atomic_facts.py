@@ -41,17 +41,29 @@ class AtomicFactGenerator(object):
     def save_cache(self):
         self.openai_lm.save_cache()
 
-    def run(self, generation):
-        """Convert the generation into a set of atomic facts."""
+    def estimate_cost(self, generation):
+        """Estimate the cost of generating the atomic facts."""
         if self.preprocess_fn:
             paragraphs = self.preprocess(generation)
         else:
             paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
 
-        atomic_facts, para_breaks = self.get_atomic_facts_from_paragraph(paragraphs)
-        return atomic_facts, para_breaks
+        num_words = 0
+        for para in paragraphs:
+            num_words += len(para.split(" "))
 
-    def get_atomic_facts_from_paragraph(self, paragraphs):
+        return num_words * 0.0008
+
+    def run(self, generation, estimate=False):
+        """Convert the generation into a set of atomic facts. Return a total words cost if estimate=True."""
+        if self.preprocess_fn:
+            paragraphs = self.preprocess(generation)
+        else:
+            paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
+
+        return self.get_atomic_facts_from_paragraph(paragraphs, estimate=estimate)
+
+    def get_atomic_facts_from_paragraph(self, paragraphs, estimate=False):
         sentences = []
         para_breaks = []
         for para_idx, paragraph in enumerate(paragraphs):
@@ -71,9 +83,14 @@ class AtomicFactGenerator(object):
 
             sentences += curr_sentences
 
-        atoms = self.get_init_atomic_facts_from_sentence([sent for i, sent in enumerate(sentences) if not (not self.is_bio and ( \
-                    (i==0 and (sent.startswith("Sure") or sent.startswith("Here are"))) or \
-                    (i==len(sentences)-1 and (sent.startswith("Please") or sent.startswith("I hope") or sent.startswith("Here are")))))])
+        atoms_or_estimate = self.get_init_atomic_facts_from_sentence([sent for i, sent in enumerate(sentences) if not (not self.is_bio and ( \
+                            (i==0 and (sent.startswith("Sure") or sent.startswith("Here are"))) or \
+                            (i==len(sentences)-1 and (sent.startswith("Please") or sent.startswith("I hope") or sent.startswith("Here are")))))], estimate=estimate)
+
+        if estimate:
+            return atoms_or_estimate
+        else:
+            atoms = atoms_or_estimate
 
         atomic_facts_pairs = []
         for i, sent in enumerate(sentences):
@@ -98,7 +115,9 @@ class AtomicFactGenerator(object):
         return atomic_facts_pairs, para_breaks
 
 
-    def get_init_atomic_facts_from_sentence(self, sentences):
+    def get_init_atomic_facts_from_sentence(self, sentences, estimate=False):
+        """Get the initial atomic facts from the sentences. Return a total words cost if estimate=True."""
+
         is_bio = self.is_bio
         demons = self.demons
 
@@ -129,15 +148,21 @@ class AtomicFactGenerator(object):
             prompts.append(prompt)
             prompt_to_sent[prompt] = sentence
 
-        for prompt in prompts:
-            output, _ = self.openai_lm.generate(prompt)
-            atoms[prompt_to_sent[prompt]] = text_to_sentences(output)
+        if estimate:
+            total_words_estimate = 0
+            for prompt in prompts:
+                total_words_estimate += len(prompt.split())
+            return total_words_estimate
+        else:
+            for prompt in prompts:
+                output, _ = self.openai_lm.generate(prompt)
+                atoms[prompt_to_sent[prompt]] = text_to_sentences(output)
 
-        for key, value in demons.items():
-            if key not in atoms:
-                atoms[key] = value
+            for key, value in demons.items():
+                if key not in atoms:
+                    atoms[key] = value
 
-        return atoms
+            return atoms
 
 
 def preprocess_fn(generation, model):
