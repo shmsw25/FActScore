@@ -41,19 +41,6 @@ class AtomicFactGenerator(object):
     def save_cache(self):
         self.openai_lm.save_cache()
 
-    def estimate_cost(self, generation):
-        """Estimate the cost of generating the atomic facts."""
-        if self.preprocess_fn:
-            paragraphs = self.preprocess(generation)
-        else:
-            paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
-
-        num_words = 0
-        for para in paragraphs:
-            num_words += len(para.split(" "))
-
-        return num_words * 0.0008
-
     def run(self, generation, estimate=False):
         """Convert the generation into a set of atomic facts. Return a total words cost if estimate=True."""
         if self.preprocess_fn:
