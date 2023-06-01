@@ -45,6 +45,9 @@ This command does the following.
 - `--data_dir`: directory to store the knowledge source and example data. `.cache/factscore` by default.
 - `--model_dir`: directory to store Inst-LLAMA weights. `.cache/factscore` by default.
 
+**Troubleshooting**:
+- If you get a `ERROR 429: Too Many Requests` error while downloading the DB file, please download the DB from [this Google Drive link](https://drive.google.com/file/d/1mekls6OGOKLmt7gYtHs0WGf5oTamTNat/view?usp=sharing) and place it under `--data_dir` (`.cache/factscore` by default).
+
 
 ## Running FActScore using a command line
 
