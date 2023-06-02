@@ -203,11 +203,11 @@ class FactScorer(object):
                     definition += "."
                 prompt = "{}\n\nInput: {} True or False?\nOutput:".format(definition.strip(), atom.strip())
 
-                if cost_estimate == "consider_cache" and (prompt.strip() + "_0") not in self.lm.cache_dict:
-                    total_words += len(prompt.split())
-                    continue
-                elif cost_estimate == "ignore_cache":
-                    total_words += len(prompt.split())
+                if cost_estimate:
+                    if cost_estimate == "consider_cache" and (prompt.strip() + "_0") not in self.lm.cache_dict:
+                        total_words += len(prompt.split())
+                    elif cost_estimate == "ignore_cache":
+                        total_words += len(prompt.split())
                     continue
 
                 output = self.lm.generate(prompt)
