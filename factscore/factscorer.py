@@ -20,6 +20,7 @@ class FactScorer(object):
                  model_dir=".cache/factscore",
                  cache_dir=".cache/factscore",
                  openai_key="api.key",
+                 cost_estimate="consider_cache",
                  batch_size=256):
         assert model_name in ["retrieval+llama", "retrieval+llama+npm", "retrieval+ChatGPT", "npm", "retrieval+ChatGPT+npm"]
         self.model_name = model_name
@@ -36,6 +37,7 @@ class FactScorer(object):
             os.makedirs(cache_dir)
 
         self.af_generator = None
+        self.cost_estimate = cost_estimate
 
         if "llama" in model_name:
             self.lm = CLM("inst-llama-7B",
@@ -130,7 +132,7 @@ class FactScorer(object):
             # estimate the total cost of atomic fact generation
             total_words = 0
             for gen in generations:
-                total_words += self.af_generator.run(gen, estimate=True)
+                total_words += self.af_generator.run(gen, cost_estimate=self.cost_estimate)
 
             self.print_cost_estimates(total_words, task="atomic fact generation", model="davinci-003")
 
@@ -158,7 +160,7 @@ class FactScorer(object):
             total_words = 0
             for topic, generation, facts in zip(topics, generations, atomic_facts):
                 if facts is not None:
-                    total_words += self._get_score(topic, generation, facts, knowledge_source, estimate=True)
+                    total_words += self._get_score(topic, generation, facts, knowledge_source, cost_estimate=self.cost_estimate)
 
             self.print_cost_estimates(total_words, task="factscore evaluation", model="gpt-3.5-turbo")
 
@@ -185,7 +187,7 @@ class FactScorer(object):
                 "decisions": decisions,
                 "num_facts_per_response": np.mean([len(d) for d in decisions if d is not None])}
 
-    def _get_score(self, topic, generation, atomic_facts, knowledge_source, estimate=False):
+    def _get_score(self, topic, generation, atomic_facts, knowledge_source, cost_estimate=None):
         decisions = []
         total_words = 0
         for atom in atomic_facts:
@@ -200,9 +202,14 @@ class FactScorer(object):
                 if not definition[-1] in string.punctuation:
                     definition += "."
                 prompt = "{}\n\nInput: {} True or False?\nOutput:".format(definition.strip(), atom.strip())
-                if estimate:
+
+                if cost_estimate == "consider_cache" and (prompt.strip() + "_0") not in self.lm.cache_dict:
                     total_words += len(prompt.split())
                     continue
+                elif cost_estimate == "ignore_cache":
+                    total_words += len(prompt.split())
+                    continue
+
                 output = self.lm.generate(prompt)
 
                 if type(output[1])==np.ndarray:
@@ -234,7 +241,7 @@ class FactScorer(object):
 
             decisions.append({"atom": atom, "is_supported": is_supported})
 
-        if estimate:
+        if cost_estimate:
             return total_words
         else:
             return decisions
@@ -260,6 +267,10 @@ if __name__ == '__main__':
     parser.add_argument('--cache_dir',
                         type=str,
                         default=".cache/factscore/")
+    parser.add_argument('--cost_estimate',
+                        type=str,
+                        default="consider_cache",
+                        choices=["consider_cache", "ignore_cache"])
     parser.add_argument('--use_atomic_facts',
                         action="store_true")
     parser.add_argument('--verbose',
@@ -282,7 +293,8 @@ if __name__ == '__main__':
                     data_dir=args.data_dir,
                     model_dir=args.model_dir,
                     cache_dir=args.cache_dir,
-                    openai_key=args.openai_key)
+                    openai_key=args.openai_key,
+                    cost_estimate=args.cost_estimate)
 
     tot = 0
     topics, generations, atomic_facts = [], [], []
