@@ -20,6 +20,7 @@ class FactScorer(object):
                  model_dir=".cache/factscore",
                  cache_dir=".cache/factscore",
                  openai_key="api.key",
+                 cost_estimate="consider_cache",
                  batch_size=256):
         assert model_name in ["retrieval+llama", "retrieval+llama+npm", "retrieval+ChatGPT", "npm", "retrieval+ChatGPT+npm"]
         self.model_name = model_name
@@ -36,6 +37,7 @@ class FactScorer(object):
             os.makedirs(cache_dir)
 
         self.af_generator = None
+        self.cost_estimate = cost_estimate
 
         if "llama" in model_name:
             self.lm = CLM("inst-llama-7B",
@@ -77,6 +79,25 @@ class FactScorer(object):
                                  "npm-single",
                                  cache_file=os.path.join(self.cache_dir, f"npm-{name}.pkl"))
 
+
+    def print_cost_estimates(self, total_words, task, model):
+        # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
+        # Number of tokens are roughly 4/3 of the number of words
+        total_tokens = total_words * 4.0 / 3
+
+        # https://openai.com/pricing
+        # if we use davinci-003, the cost is $0.02 per 1000 tokens
+        # if we use gpt-3.5-turbo, the cost is $0.002 per 1000 tokens
+        if model == "davinci-003":
+            rate = 0.02
+        elif model == "gpt-3.5-turbo":
+            rate = 0.002
+
+        total_cost = total_tokens * rate / 1000
+
+        # print the total words, tokens, and cost along with rate
+        logging.critical("Estimated OpenAI API cost for %s ($%.3f per 1000 tokens): $%.2f for %d words and %d tokens" % (task, rate, total_cost, total_words, total_tokens))
+
     def get_score(self,
                   topics,
                   generations,
@@ -108,6 +129,13 @@ class FactScorer(object):
                                                         demon_dir=os.path.join(self.data_dir, "demos"),
                                                         gpt3_cache_file=os.path.join(self.cache_dir, "InstructGPT.pkl"))
 
+            # estimate the total cost of atomic fact generation
+            total_words = 0
+            for gen in generations:
+                total_words += self.af_generator.run(gen, cost_estimate=self.cost_estimate)
+
+            self.print_cost_estimates(total_words, task="atomic fact generation", model="davinci-003")
+
             if verbose:
                 topics = tqdm(topics)
 
@@ -121,11 +149,20 @@ class FactScorer(object):
                     atomic_facts.append(curr_afs)
                 if len(atomic_facts) % 10 == 0:
                     self.af_generator.save_cache()
-            
+
             assert len(atomic_facts)==len(topics)
             self.af_generator.save_cache()
-        
+
         respond_ratio = np.mean([facts is not None for facts in atomic_facts])
+
+        if "ChatGPT" in self.model_name:
+            # estimate the total cost of response generation
+            total_words = 0
+            for topic, generation, facts in zip(topics, generations, atomic_facts):
+                if facts is not None:
+                    total_words += self._get_score(topic, generation, facts, knowledge_source, cost_estimate=self.cost_estimate)
+
+            self.print_cost_estimates(total_words, task="factscore evaluation", model="gpt-3.5-turbo")
 
         if verbose:
             topics = tqdm(topics)
@@ -142,16 +179,17 @@ class FactScorer(object):
                 scores.append(score)
                 if len(scores) % 10 == 0:
                     self.save_cache()
-        
+
         self.save_cache()
 
         return {"score": np.mean(scores),
                 "respond_ratio": respond_ratio,
                 "decisions": decisions,
-                "num_facts_per_response": np.mean([len(d) for d in decisions])}
+                "num_facts_per_response": np.mean([len(d) for d in decisions if d is not None])}
 
-    def _get_score(self, topic, generation, atomic_facts, knowledge_source):
+    def _get_score(self, topic, generation, atomic_facts, knowledge_source, cost_estimate=None):
         decisions = []
+        total_words = 0
         for atom in atomic_facts:
             atom = atom.strip()
             if self.lm:
@@ -164,6 +202,14 @@ class FactScorer(object):
                 if not definition[-1] in string.punctuation:
                     definition += "."
                 prompt = "{}\n\nInput: {} True or False?\nOutput:".format(definition.strip(), atom.strip())
+
+                if cost_estimate:
+                    if cost_estimate == "consider_cache" and (prompt.strip() + "_0") not in self.lm.cache_dict:
+                        total_words += len(prompt.split())
+                    elif cost_estimate == "ignore_cache":
+                        total_words += len(prompt.split())
+                    continue
+
                 output = self.lm.generate(prompt)
 
                 if type(output[1])==np.ndarray:
@@ -195,7 +241,10 @@ class FactScorer(object):
 
             decisions.append({"atom": atom, "is_supported": is_supported})
 
-        return decisions
+        if cost_estimate:
+            return total_words
+        else:
+            return decisions
 
 if __name__ == '__main__':
 
@@ -218,6 +267,10 @@ if __name__ == '__main__':
     parser.add_argument('--cache_dir',
                         type=str,
                         default=".cache/factscore/")
+    parser.add_argument('--cost_estimate',
+                        type=str,
+                        default="consider_cache",
+                        choices=["consider_cache", "ignore_cache"])
     parser.add_argument('--use_atomic_facts',
                         action="store_true")
     parser.add_argument('--verbose',
@@ -235,12 +288,13 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s - %(name)s - %(message)s',
                         datefmt='%m/%d/%Y %H:%M:%S',
                         level=logging.ERROR if args.print_rate_limit_error else logging.CRITICAL)
-    
+
     fs = FactScorer(model_name=args.model_name,
                     data_dir=args.data_dir,
                     model_dir=args.model_dir,
                     cache_dir=args.cache_dir,
-                    openai_key=args.openai_key)
+                    openai_key=args.openai_key,
+                    cost_estimate=args.cost_estimate)
 
     tot = 0
     topics, generations, atomic_facts = [], [], []
@@ -264,9 +318,9 @@ if __name__ == '__main__':
                        generations=generations,
                        atomic_facts=atomic_facts if args.use_atomic_facts else None,
                        verbose=args.verbose)
-    logging.critical("FActScore=%.1f%%" % (100*out["score"]))
-    logging.critical("Respond ratio=%.1f%%" % (100*out["respond_ratio"]))
-    logging.critical("# Atomic facts per response=%.1f" % (out["num_facts_per_response"]))
+    logging.critical("FActScore = %.1f%%" % (100*out["score"]))
+    logging.critical("Respond ratio = %.1f%%" % (100*out["respond_ratio"]))
+    logging.critical("# Atomic facts per valid response = %.1f" % (out["num_facts_per_response"]))
 
 
 
