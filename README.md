@@ -1,15 +1,16 @@
 # FActScore
 
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-red.svg)](#python)
+[![arxiv](https://img.shields.io/badge/arXiv-2305.14251-b31b1b.svg)](https://arxiv.org/abs/2305.14251)
 [![PyPI version factscore](https://badge.fury.io/py/factscore.svg)](https://pypi.python.org/pypi/factscore/)
 [![Downloads](https://pepy.tech/badge/factscore)](https://pepy.tech/project/factscore)
 
-This is the official release accompanying our preprint, [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation](https://tinyurl.com/FActScore). FActScore is available as a PIP package as well.
+This is the official release accompanying our preprint, [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation](https://arxiv.org/abs/2305.14251). FActScore is available as a PIP package as well.
 
 If you find FActScore useful, please cite:
 ```
 @article{ factscore,
-    title={ {FActScore}: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation }, 
+    title={ {FActScore}: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation },
     author={ Min, Sewon and Krishna, Kalpesh and Lyu, Xinxi and Lewis, Mike and Yih, Wen-tau and Koh, Pang Wei and Iyyer, Mohit and Zettlemoyer, Luke and Hajishirzi, Hannaneh },
     year={ 2023 },
     journal={ arXiv preprint arXiv:2305.14251 },
@@ -27,7 +28,7 @@ pip install -r requirements.txt
 Make a new Python 3.7+ environment using `virtualenv` or `conda`.
 
 ```bash
-pip install factscore
+pip install --upgrade factscore
 python -m spacy download en_core_web_sm
 ```
 
@@ -47,6 +48,7 @@ This command does the following.
 
 **Troubleshooting**:
 - If you get a `ERROR 429: Too Many Requests` error while downloading the DB file, please download the DB from [this Google Drive link](https://drive.google.com/file/d/1mekls6OGOKLmt7gYtHs0WGf5oTamTNat/view?usp=sharing) and place it under `--data_dir` (`.cache/factscore` by default).
+- If everything else fails, consider downloading the files manually from [this link](https://drive.google.com/drive/folders/1bLHGu_imkZVtX6O0mpZ-G0-4ofTLM1ZA?usp=share_link) and placing them in `--data_dir` and `--model_dir`, see [`factscore/download_data.py`](factscore/download_data.py) for more details.
 
 
 ## Running FActScore using a command line
@@ -69,6 +71,7 @@ python -m factscore.factscorer --input_path {input_path} --model_name {estimator
 - `--n_samples`: If specified, it runs the model on a subset of the data.
 - `--verbose`: If specified, it shows the progress bar.
 - `--print_rate_limit_error`: It specified, it prints out rate limit errors from OpenAI API.
+- `--cost_estimate`: This flag decides the type of OpenAI API cost estimation that we provide before calling it. It can be `"consider_cache"` (default) or `"ignore_cache"`.
 
 This command uses the English Wikipedia from 2023/04/01 as a knowledge source. See [this section](#To-use-a-custom-knowledge-source) to use your own database as a knowledge source!
 
