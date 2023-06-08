@@ -66,7 +66,7 @@ class DocDB(object):
                 passages = [[]]
                 for sent_idx, sent in enumerate(text):
                     assert len(sent.strip())>0
-                    tokens = tokenizer(sent)["input_ids"]
+                    tokens = tokenizer(sent, truncation=True, max_length=MAX_LENGTH)["input_ids"]
                     max_length = MAX_LENGTH - len(passages[-1])
                     if len(tokens) <= max_length:
                         passages[-1].extend(tokens)
