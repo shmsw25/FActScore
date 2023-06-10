@@ -9,6 +9,7 @@ import pickle as pkl
 from rank_bm25 import BM25Okapi
 
 SPECIAL_SEPARATOR = "####SPECIAL####SEPARATOR####"
+MAX_LENGTH = 256
 
 class DocDB(object):
     """Sqlite backed document storage.
@@ -78,7 +79,7 @@ class DocDB(object):
                             offset += MAX_LENGTH
                 
                 psgs = [tokenizer.decode(tokens) for tokens in passages if np.sum([t not in [0, 2] for t in tokens])>0]
-                text = SPECIAL_SEPAPATOR.join(psgs)
+                text = SPECIAL_SEPARATOR.join(psgs)
                 output_lines.append((title, text))
                 tot += 1
 
