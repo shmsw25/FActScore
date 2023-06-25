@@ -68,6 +68,7 @@ python -m factscore.factscorer --input_path {input_path} --model_name {estimator
 - `--model_dir`: Directory containing Inst-LLAMA weights. Skip if your `model_name` doesn't include `llama`. `.cache/factscore` by default.
 - `--cache_dir`: Directory containing cache from API/models. `.cache/factscore` by default.
 - `--use_atomic_facts`: If specified, it uses model-generated atomic facts released as part of our data instead of running the atomic fact generator. This will allow reproducing our results with no (or little if it still uses ChatGPT) cost. You can't specify it if you are running new model generations.
+- `--gamma`: A hyperparameter for length penalty. `10` by default. It penalizes the score if the number of facts is less than `gamma`. `10` roughly corresponds to 2 sentences, so would penalize if the generation has less than 2 sentences. Usually, this would not change the ranking between systems unless some systems generate overly short responses all the time (e.g., models trained on NLP datasets without long-form generation tasks may do so). If you would like to turn off the length penalty completely, specify `--gamma 0`.
 - `--n_samples`: If specified, it runs the model on a subset of the data.
 - `--verbose`: If specified, it shows the progress bar.
 - `--print_rate_limit_error`: It specified, it prints out rate limit errors from OpenAI API.
@@ -88,8 +89,9 @@ fs = FactScorer(openai_key="...")
 
 # topics: list of strings (human entities used to generate bios)
 # generations: list of strings (model generations)
-out = fs.get_score(topics, generations)
+out = fs.get_score(topics, generations, gamma=10)
 print (out["score"]) # FActScore
+print (out["init_score"]) # FActScore w/o length penalty
 print (out["respond_ratio"]) # % of responding (not abstaining from answering)
 print (out["num_facts_per_response"]) # average number of atomic facts per response
 ```
