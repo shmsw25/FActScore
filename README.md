@@ -72,6 +72,7 @@ python -m factscore.factscorer --input_path {input_path} --model_name {estimator
 - `--verbose`: If specified, it shows the progress bar.
 - `--print_rate_limit_error`: It specified, it prints out rate limit errors from OpenAI API.
 - `--cost_estimate`: This flag decides the type of OpenAI API cost estimation that we provide before calling it. It can be `"consider_cache"` (default) or `"ignore_cache"`.
+- `--abstain_detection`: This flag optionally enables automatic detection of abstained responses. By default this is disabled, but it is recommended to add your own function tailored to your model. The currently supported detectors are `"generic"` and `"perplexity_ai"`, and their implementations can be found in [`factscore/abstain_detection.py`](factscore/abstain_detection.py).
 
 This command uses the English Wikipedia from 2023/04/01 as a knowledge source. See [this section](#To-use-a-custom-knowledge-source) to use your own database as a knowledge source!
 

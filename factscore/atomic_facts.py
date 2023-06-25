@@ -18,13 +18,7 @@ nltk.download("punkt")
 
 
 class AtomicFactGenerator(object):
-    def __init__(self, key_path, demon_dir, model_name=None, gpt3_cache_file=None):
-
-        self.model = model_name
-        if model_name:
-            self.preprocess_fn = functools.partial(preprocess_fn, model=model_name)
-        else:
-            self.preprocess_fn = None
+    def __init__(self, key_path, demon_dir, gpt3_cache_file=None):
         self.nlp = spacy.load("en_core_web_sm")
         self.is_bio = True
         self.demon_path = os.path.join(demon_dir, "demons.json" if self.is_bio else "demons_complex.json")
@@ -43,11 +37,8 @@ class AtomicFactGenerator(object):
 
     def run(self, generation, cost_estimate=None):
         """Convert the generation into a set of atomic facts. Return a total words cost if cost_estimate != None."""
-        if self.preprocess_fn:
-            paragraphs = self.preprocess(generation)
-        else:
-            paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
-
+        assert isinstance(generation, str), "generation must be a string"
+        paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
         return self.get_atomic_facts_from_paragraph(paragraphs, cost_estimate=cost_estimate)
 
     def get_atomic_facts_from_paragraph(self, paragraphs, cost_estimate=None):
@@ -153,35 +144,6 @@ class AtomicFactGenerator(object):
 
             return atoms
 
-
-def preprocess_fn(generation, model):
-    if model in ["instruct", "gpt4", "vicuna-7b", "vicuna-13b", "chatgpt"]:
-        if not generation.startswith("I'm sorry") and not "provide more" in generation:
-            paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
-        else:
-            return None
-
-    elif model == "perplexity":
-        output = remove_citation(generation)
-        if is_invalid_ppl(output):
-            return None
-        paragraphs = []
-        for para in output.split("\n\n"):
-            if is_invalid_paragraph_ppl(para):
-                break
-            paragraphs.append(para.strip())
-
-        if len(paragraphs) == 0:
-            return None
-
-    elif model in ["mpt-7b", "stablelm-alpha-7b"]:
-        if not "sorry" in generation and not "provide" in generation.split(" "):
-            paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
-
-    else:
-        paragraphs = [para.strip() for para in generation.split("\n") if len(para.strip()) > 0]
-
-    return paragraphs
 
 def best_demos(query, bm25, demons_sents, k):
     tokenized_query = query.split(" ")
@@ -333,32 +295,6 @@ def is_integer(s):
     except Exception:
         return False
 
-def remove_citation(text):
-    # text = re.sub(r'\[\d+\]', '', text)
-    text = re.sub(r"\s*\[\d+\]\s*","", text)
-    if text.startswith("According to , "):
-        text = text.replace("According to , ", "According to the search results, ")
-    return text
-
-invalid_ppl_mentions = [
-    "I could not find any information",
-    "The search results do not provide",
-    "There is no information",
-    "There are no search results",
-    "there are no provided search results",
-    "not provided in the search results",
-    "is not mentioned in the provided search results",
-    "There seems to be a mistake in the question",
-    "Not sources found",
-    "Try a more general question"
-]
-
-def is_invalid_ppl(text):
-    return np.any([text.lower().startswith(mention.lower()) for mention in invalid_ppl_mentions])
-
-def is_invalid_paragraph_ppl(text):
-    return len(text.strip())==0 or np.any([mention.lower() in text.lower() for mention in invalid_ppl_mentions])
-
 def detect_initials(text):
     pattern = r"[A-Z]\. ?[A-Z]\."
     match = re.findall(pattern, text)
@@ -399,7 +335,7 @@ def fix_sentence_splitter(curr_sentences, initials):
 
 
 def main():
-    generator = AtomicFactGenerator("api.key", "demos", model_name=None, gpt3_cache_dir=None)
+    generator = AtomicFactGenerator("api.key", "demos", gpt3_cache_dir=None)
     atomic_facts, para_breaks = generator.run("Thierry Henry (born 17 August 1977) is a French professional football coach, pundit, and former player. He is considered one of the greatest strikers of all time, and one the greatest players of the Premier League history. He has been named Arsenal F.C's greatest ever player.\n\nHenry made his professional debut with Monaco in 1994 before signing for defending Serie A champions Juventus. However, limited playing time, coupled with disagreements with the club's hierarchy, led to him signing for Premier League club Arsenal for £11 million in 1999.")
 
     print(atomic_facts)
