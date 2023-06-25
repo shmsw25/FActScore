@@ -53,7 +53,7 @@ This command does the following.
 
 ## Running FActScore using a command line
 
-We expect running FActScore costs about $1 of the API cost per 100 sentences. For instance, if you have 100 generations, each with 5 sentences on average, it costs $5 in total. 
+We expect running FActScore costs about $1 of the API cost per 100 sentences. For instance, if you have 100 generations, each with 5 sentences on average, it costs $5 in total.
 
 ```bash
 python -m factscore.factscorer --input_path {input_path} --model_name {estimator_name} --openai_key {openai_key}
@@ -72,6 +72,7 @@ python -m factscore.factscorer --input_path {input_path} --model_name {estimator
 - `--verbose`: If specified, it shows the progress bar.
 - `--print_rate_limit_error`: It specified, it prints out rate limit errors from OpenAI API.
 - `--cost_estimate`: This flag decides the type of OpenAI API cost estimation that we provide before calling it. It can be `"consider_cache"` (default) or `"ignore_cache"`.
+- `--abstain_detection`: This flag optionally enables automatic detection of abstained responses. By default this is disabled, but it is recommended to add your own function tailored to your model. The currently supported detectors are `"generic"` and `"perplexity_ai"`, and their implementations can be found in [`factscore/abstain_detection.py`](factscore/abstain_detection.py). There are two methods to add your own abstain function: a) clone our GitHub repository to install `factscore` locally (`pip install --editable .`), and then add your function to [`factscore/abstain_detection.py`](factscore/abstain_detection.py) directly; b) process your abstain detection outside our package, and use empty strings in the `output` key for the JSONL file used in `--input_path`.
 
 This command uses the English Wikipedia from 2023/04/01 as a knowledge source. See [this section](#To-use-a-custom-knowledge-source) to use your own database as a knowledge source!
 

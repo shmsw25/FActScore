@@ -6,6 +6,7 @@ import os
 import logging
 
 from tqdm import tqdm
+from factscore.abstain_detection import is_response_abstained
 from factscore.atomic_facts import AtomicFactGenerator
 from factscore.clm import CLM
 from factscore.npm import NPM
@@ -21,6 +22,7 @@ class FactScorer(object):
                  cache_dir=".cache/factscore",
                  openai_key="api.key",
                  cost_estimate="consider_cache",
+                 abstain_detection_type=None,
                  batch_size=256):
         assert model_name in ["retrieval+llama", "retrieval+llama+npm", "retrieval+ChatGPT", "npm", "retrieval+ChatGPT+npm"]
         self.model_name = model_name
@@ -30,6 +32,7 @@ class FactScorer(object):
         self.npm = {}
         self.batch_size = batch_size # batch size for retrieval
         self.openai_key = openai_key
+        self.abstain_detection_type = abstain_detection_type
 
         self.data_dir = data_dir
         self.cache_dir = cache_dir
@@ -141,6 +144,12 @@ class FactScorer(object):
 
             atomic_facts = []
             for topic, gen in zip(topics, generations):
+                # optionally, first detect if the response is abstained
+                response_abstained = is_response_abstained(gen, self.abstain_detection_type)
+                if response_abstained:
+                    atomic_facts.append(None)
+                    continue
+                # continue only when the response is not abstained
                 curr_afs, _ = self.af_generator.run(gen)
                 curr_afs = [fact for _, facts in curr_afs for fact in facts]
                 if len(curr_afs)==0:
@@ -271,6 +280,10 @@ if __name__ == '__main__':
                         type=str,
                         default="consider_cache",
                         choices=["consider_cache", "ignore_cache"])
+    parser.add_argument('--abstain_detection_type',
+                        type=str,
+                        default=None,
+                        choices=["perplexity_ai", "generic", "none"])
     parser.add_argument('--use_atomic_facts',
                         action="store_true")
     parser.add_argument('--verbose',
@@ -294,7 +307,8 @@ if __name__ == '__main__':
                     model_dir=args.model_dir,
                     cache_dir=args.cache_dir,
                     openai_key=args.openai_key,
-                    cost_estimate=args.cost_estimate)
+                    cost_estimate=args.cost_estimate,
+                    abstain_detection_type=args.abstain_detection_type)
 
     tot = 0
     topics, generations, atomic_facts = [], [], []
