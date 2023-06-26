@@ -145,9 +145,20 @@ class Retrieval(object):
     
     def save_cache(self):
         if self.add_n > 0:
+            if os.path.exists(self.cache_path):
+                with open(self.cache_path, "r") as f:
+                    new_cache = json.load(f)
+                self.cache.update(new_cache)
+            
             with open(self.cache_path, "w") as f:
                 json.dump(self.cache, f)
+        
         if self.add_n_embed > 0:
+            if os.path.exists(self.embed_cache_path):
+                with open(self.embed_cache_path, "rb") as f:
+                    new_cache = pkl.load(f)
+                self.embed_cache.update(new_cache)
+            
             with open(self.embed_cache_path, "wb") as f:
                 pkl.dump(self.embed_cache, f)
 

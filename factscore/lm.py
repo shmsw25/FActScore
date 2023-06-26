@@ -1,5 +1,6 @@
 import pickle
 import os
+import time
 
 class LM(object):
 
@@ -43,10 +44,18 @@ class LM(object):
         with open(self.cache_file, "wb") as f:
             pickle.dump(self.cache_dict, f)
 
-    def load_cache(self):
+    def load_cache(self, allow_retry=True):
         if os.path.exists(self.cache_file):
-            with open(self.cache_file, "rb") as f:
-                cache = pickle.load(f)
+            while True:
+                try:
+                    with open(self.cache_file, "rb") as f:
+                        cache = pickle.load(f)
+                    break
+                except Exception:
+                    if not allow_retry:
+                        assert False
+                    print ("Pickle Error: Retry in 5sec...")
+                    time.sleep(5)        
         else:
             cache = {}
         return cache

@@ -17,7 +17,7 @@ class FactScorer(object):
 
     def __init__(self,
                  model_name="retrieval+ChatGPT",
-                 data_dir=".cache/factscore",
+                 data_dir="data",
                  model_dir=".cache/factscore",
                  cache_dir=".cache/factscore",
                  openai_key="api.key",
@@ -104,6 +104,7 @@ class FactScorer(object):
     def get_score(self,
                   topics,
                   generations,
+                  gamma=10,
                   atomic_facts=None,
                   knowledge_source=None,
                   verbose=False):
@@ -177,6 +178,7 @@ class FactScorer(object):
             topics = tqdm(topics)
 
         scores = []
+        init_scores = []
         decisions = []
         for topic, generation, facts in zip(topics, generations, atomic_facts):
             if facts is None:
@@ -184,6 +186,12 @@ class FactScorer(object):
             else:
                 decision = self._get_score(topic, generation, facts, knowledge_source)
                 score = np.mean([d["is_supported"] for d in decision])
+                
+                if gamma:
+                    init_scores.append(score)
+                    penalty = 1.0 if len(facts)>gamma else np.exp(1-gamma/len(facts))
+                    score = penalty * score
+                
                 decisions.append(decision)
                 scores.append(score)
                 if len(scores) % 10 == 0:
@@ -191,10 +199,15 @@ class FactScorer(object):
 
         self.save_cache()
 
-        return {"score": np.mean(scores),
-                "respond_ratio": respond_ratio,
-                "decisions": decisions,
-                "num_facts_per_response": np.mean([len(d) for d in decisions if d is not None])}
+        out = {"score": np.mean(scores),
+               "respond_ratio": respond_ratio,
+               "decisions": decisions,
+               "num_facts_per_response": np.mean([len(d) for d in decisions if d is not None])}
+
+        if gamma:
+            out["init_score"] = np.mean(init_scores)
+        
+        return out
 
     def _get_score(self, topic, generation, atomic_facts, knowledge_source, cost_estimate=None):
         decisions = []
@@ -264,6 +277,11 @@ if __name__ == '__main__':
     parser.add_argument('--model_name',
                         type=str,
                         default="retrieval+ChatGPT")
+    parser.add_argument('--gamma',
+                        type=int,
+                        default=10,
+                        help="hyperparameter for length penalty")
+
     parser.add_argument('--openai_key',
                         type=str,
                         default="api.key")
@@ -276,6 +294,7 @@ if __name__ == '__main__':
     parser.add_argument('--cache_dir',
                         type=str,
                         default=".cache/factscore/")
+
     parser.add_argument('--cost_estimate',
                         type=str,
                         default="consider_cache",
@@ -288,7 +307,7 @@ if __name__ == '__main__':
                         action="store_true")
     parser.add_argument('--verbose',
                         action="store_true",
-                        help="for printing out the progress bar")
+                        help="for printing out the progress bar")    
     parser.add_argument('--print_rate_limit_error',
                         action="store_true",
                         help="for printing out rate limit error when using OpenAI keys")
@@ -330,9 +349,12 @@ if __name__ == '__main__':
                 break
     out = fs.get_score(topics=topics,
                        generations=generations,
+                       gamma=args.gamma,
                        atomic_facts=atomic_facts if args.use_atomic_facts else None,
                        verbose=args.verbose)
     logging.critical("FActScore = %.1f%%" % (100*out["score"]))
+    if "init_score" in out:
+        logging.critical("FActScore w/o length penalty = %.1f%%" % (100*out["init_score"]))
     logging.critical("Respond ratio = %.1f%%" % (100*out["respond_ratio"]))
     logging.critical("# Atomic facts per valid response = %.1f" % (out["num_facts_per_response"]))
 
