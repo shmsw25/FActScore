@@ -108,15 +108,12 @@ class FactScorer(object):
                   atomic_facts=None,
                   knowledge_source=None,
                   verbose=False):
-
         if knowledge_source is None:
-            # use the default one (enwiki-20230401)
+            # use the default knowledge source
             knowledge_source = "enwiki-20230401"
-            if knowledge_source not in self.retrieval:
-                self.register_knowledge_source(knowledge_source)
-        else:
-            assert knowledge_source in self.retrieval, \
-                f"{knowledge_source} is not registered yet. Please use `register_knowledge_source()` function to register it with a database"
+
+        if knowledge_source not in self.retrieval:
+            self.register_knowledge_source(knowledge_source)
 
         if type(topics)==len(generations)==str:
             topics = [topics]
@@ -294,6 +291,10 @@ if __name__ == '__main__':
     parser.add_argument('--cache_dir',
                         type=str,
                         default=".cache/factscore/")
+    parser.add_argument('--knowledge_source',
+                        type=str,
+                        default=None)
+
 
     parser.add_argument('--cost_estimate',
                         type=str,
@@ -351,6 +352,7 @@ if __name__ == '__main__':
                        generations=generations,
                        gamma=args.gamma,
                        atomic_facts=atomic_facts if args.use_atomic_facts else None,
+                       knowledge_source=args.knowledge_source,
                        verbose=args.verbose)
     logging.critical("FActScore = %.1f%%" % (100*out["score"]))
     if "init_score" in out:
@@ -358,5 +360,7 @@ if __name__ == '__main__':
     logging.critical("Respond ratio = %.1f%%" % (100*out["respond_ratio"]))
     logging.critical("# Atomic facts per valid response = %.1f" % (out["num_facts_per_response"]))
 
-
+    # Save out as a json file
+    with open(args.input_path.replace(".jsonl", f"_factscore_output.json"), 'w') as f:
+        f.write(json.dumps(out) + "\n")
 

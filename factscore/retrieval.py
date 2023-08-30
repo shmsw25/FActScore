@@ -56,6 +56,8 @@ class DocDB(object):
 
         with open(data_path, "r") as f:
             for line in f:
+                if tot % 100 == 0:
+                    print(f"Finished reading {tot} lines ({(time.time() - start_time) / 60:.2f} min)")
                 dp = json.loads(line)
                 title = dp["title"]
                 text = dp["text"]
@@ -77,7 +79,7 @@ class DocDB(object):
                         while offset < len(tokens):
                             passages.append(tokens[offset:offset+MAX_LENGTH])
                             offset += MAX_LENGTH
-                
+
                 psgs = [tokenizer.decode(tokens) for tokens in passages if np.sum([t not in [0, 2] for t in tokens])>0]
                 text = SPECIAL_SEPARATOR.join(psgs)
                 output_lines.append((title, text))
@@ -99,6 +101,7 @@ class DocDB(object):
         """Fetch the raw text of the doc for 'doc_id'."""
         cursor = self.connection.cursor()
         cursor.execute("SELECT text FROM documents WHERE title = ?", (title,))
+        # cursor.execute("SELECT title FROM documents")
         results = cursor.fetchall()
         results = [r for r in results]
         cursor.close()
