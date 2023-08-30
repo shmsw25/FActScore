@@ -5,7 +5,8 @@ import openai
 from factscore.openai_lm import call_ChatGPT
 from factscore.factscorer import FactScorer
 
-
+# File downloaded from https://github.com/shauryr/ACL-anthology-corpus
+# https://drive.google.com/file/d/1CFCzNGlTls0H-Zcaem4Hg_ETj4ebhcDO/view?usp=sharing
 df = pd.read_parquet('acl-publication-info.74k.parquet')
 titles = df['title'].tolist()
 full_text = df['full_text'].tolist()
