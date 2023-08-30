@@ -3,27 +3,30 @@ import tqdm
 import json
 import openai
 from factscore.openai_lm import call_ChatGPT
+from factscore.factscorer import FactScorer
 
 
 df = pd.read_parquet('acl-publication-info.74k.parquet')
 titles = df['title'].tolist()
-abstracts = df['abstract'].tolist()
 full_text = df['full_text'].tolist()
-years = df['year'].tolist()
-authors = [[y.strip() for y in x.split("and\n")] if x is not None else None for x in df['author'].tolist()]
 
-# # build the corpus first
-# output_corpus = []
-# for title, abstract, ftext, author in zip(titles, abstracts, full_text, authors):
-#     if author is not None and ftext.strip():
-#         output_corpus.append({"title": title, "text": ftext})
+acl_corpus = []
+for x, y in zip(titles, full_text):
+    if x.strip() == "" or y.strip() == "":
+        continue
+    acl_corpus.append({"title": x, "text": y})
 
-# print(f"Number of papers in the corpus: {len(output_corpus)} ({len(titles) - len(output_corpus)} filtered)")
+with open("acl_corpus.jsonl", 'w') as f:
+    for line in acl_corpus:
+        f.write(json.dumps(line) + "\n")
 
-# # write the corpus to a jsonl file
-# with open("acl_corpus.jsonl", 'w') as f:
-#     for line in output_corpus:
-#         f.write(json.dumps(line) + "\n")
+fs = FactScorer()
+# this will create a database using your file
+# once DB file is created, you can reuse it by only specifying `db_path`
+fs.register_knowledge_source("acl_corpus",
+                             data_path="acl_corpus.jsonl",
+                             db_path=None)
+
 
 prompt_titles = [
     "Dense Passage Retrieval for Open-Domain Question Answering",
@@ -40,15 +43,8 @@ prompt_titles = [
 
 prompts_list = []
 
-# find all papers whose author is Kalpesh Krishna
-for title, abstract, ftext, author in zip(titles, abstracts, full_text, authors):
-    if title.strip() in prompt_titles:
-        assert ftext.strip()
-
 for title in prompt_titles:
-    prompts_list.append(
-        f"Give me a summary of the research paper titled \"{title}\"."
-    )
+    prompts_list.append(f"Give me a summary of the research paper titled \"{title}\".")
 
 with open("api.key", 'r') as f:
     api_key = f.readline()
@@ -67,36 +63,3 @@ for ptitle, prompt in tqdm.tqdm(zip(prompt_titles, prompts_list)):
 with open("acl_chatgpt_outputs.jsonl", 'w') as f:
     for line in responses:
         f.write(json.dumps(line) + "\n")
-
-# def count_freqs(counts, str_name="authors"):
-#     counts = [(k, v) for k, v in counts.items()]
-#     freq_list = [0, 1, 3, 10, 20, 50, 100000]
-#     print("")
-#     for i in range(len(freq_list) - 1):
-#         num_counts = [x for x in counts if x[1] > freq_list[i] and x[1] <= freq_list[i + 1]]
-#         print(f"Number of {str_name} with {freq_list[i]} < freq <= {freq_list[i + 1]}: {len(num_counts)} ({len(num_counts) / len(counts) * 100:.2f}%)")
-#     print("")
-
-# count_freqs(Counter(authors), "authors")
-
-# all_entities = []
-# for idx, abstract in tqdm.tqdm(enumerate(abstracts)):
-#     doc = nlp(abstract)
-#     curr_ents = []
-#     for ent in doc.ents:
-#         curr_ents.append(ent.text.strip())
-#     curr_ents = list(set(curr_ents))
-#     all_entities.append(curr_ents)
-
-#     if (idx + 1) % 3000 == 0:
-#         count_freqs(Counter([y for x in all_entities for y in x]), "entities")
-
-# # write all_entities to a pickle file
-# with open("indexes/acl_entities.pkl", 'wb') as f:
-#     pickle.dump(all_entities, f)
-
-# acl_counts = Counter([y for x in all_entities for y in x])
-# # sort by frequency
-# acl_counts = [(k, v) for k, v in acl_counts.items()]
-# acl_counts = sorted(acl_counts, key=lambda x: x[1], reverse=True)
-
