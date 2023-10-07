@@ -5,7 +5,7 @@
 [![PyPI version factscore](https://badge.fury.io/py/factscore.svg)](https://pypi.python.org/pypi/factscore/)
 [![Downloads](https://pepy.tech/badge/factscore)](https://pepy.tech/project/factscore)
 
-This is the official release accompanying our preprint, [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation](https://arxiv.org/abs/2305.14251). FActScore is available as a PIP package as well.
+This is the official release accompanying our EMNLP 2023 paper, [FActScore: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation](https://arxiv.org/abs/2305.14251). FActScore is available as a PIP package as well.
 
 If you find FActScore useful, please cite:
 ```
