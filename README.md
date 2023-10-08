@@ -9,11 +9,11 @@ This is the official release accompanying our EMNLP 2023 paper, [FActScore: Fine
 
 If you find FActScore useful, please cite:
 ```
-@article{ factscore,
+@inproceedings{ factscore,
     title={ {FActScore}: Fine-grained Atomic Evaluation of Factual Precision in Long Form Text Generation },
     author={ Min, Sewon and Krishna, Kalpesh and Lyu, Xinxi and Lewis, Mike and Yih, Wen-tau and Koh, Pang Wei and Iyyer, Mohit and Zettlemoyer, Luke and Hajishirzi, Hannaneh },
     year={ 2023 },
-    journal={ arXiv preprint arXiv:2305.14251 },
+    booktitle = { EMNLP },
     url={ https://arxiv.org/abs/2305.14251 }
 }
 ```
