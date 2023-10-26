@@ -115,7 +115,7 @@ class FactScorer(object):
         if knowledge_source not in self.retrieval:
             self.register_knowledge_source(knowledge_source)
 
-        if type(topics)==len(generations)==str:
+        if type(topics)==type(generations)==str:
             topics = [topics]
             generations = [generations]
         else:
