@@ -18,6 +18,9 @@ If you find FActScore useful, please cite:
 }
 ```
 
+## Announcement
+* **11/04/2023**: The data we release includes human annotations of factual precision reported in Section 3 of [the paper](https://arxiv.org/abs/2305.14251). If you want to download these human annotated data *only*, without other data, you can download it directly from [this Google Drive link](https://drive.google.com/file/d/1enz1PxwxeMr4FRF9dtpCPXaZQCBejuVF/view?usp=sharing). We are also releasing FActScore results of 12 different LMs reported in Section 4.3 of the paper, in case you want to obtain them without running the code. Please refer to [here](#factscore-results-of-the-unlabeled-data).
+
 ## Install
 <!-- ```
 conda create -n fs-env python=3.9
@@ -143,3 +146,35 @@ print (out["num_facts_per_response"]) # average number of atomic facts per respo
 ```
 
 To see an example of constructing the ACL anthology knowledge source, see [`preprocessing/preprocess_acl.py`](preprocessing/preprocess_acl.py).
+
+## FActScore results of the unlabeled data
+
+You can easily reproduce FActScore results of 12 different LMs reported in Section 4.3 of [the paper](https://arxiv.org/abs/2305.14251) using this code. However, if you would like to obtain their predictions without running the code, you can download it from [this Google Drive link](https://drive.google.com/file/d/128qpNFhXJJTmPIbtqMJ5QSZprhWQDCDa/view?usp=sharing).
+
+Each file corresponds to the subject LM (LM that generates responses that we are validating). Each line is a dictionary:
+- `prompt`: the initial prompt fed into the LM
+- `facts`: atomic facts decomposed by the model
+- `LLAMA+NP_labels`: labels to facts, verified by LLAMA+NP
+- `ChatGPT_labels`: labels to facts, verified by ChatGPT
+
+Note that the number of lines may be less than 500, because it excludes the cases where the model abstains from responding (e.g., it says "I don't know"). You can do `# of lines / 500` to calculate the response ratio.
+
+If you unzip the data and run the following code for verification, you will be able to get statistics that exactly match the statistics reported in the paper (Table 5 and Figure 3).
+```python
+dirname = "factscore-unlabeled-predictions"
+for fn in os.listdir(dirname):
+    chatgpt_fs = []
+    llama_fs = []
+    n_facts = []
+    with open(os.path.join(dirname, fn)) as f:
+        for line in f:
+            dp = json.loads(line)
+            n_facts.append(len(dp["facts"]))
+            if "ChatGPT_Labels" in dp:
+                chatgpt_fs.append(np.mean([l=="S" for l in dp["ChatGPT_Labels"]]))
+            llama_fs.append(np.mean([l=="S" for l in dp["LLAMA+NP_Labels"]]))
+    print ("Model=%s\t(%.1f%% responding, %.1f facts/response)\tFactScore=%.1f (ChatGPT)\t%.1f (LLAMA)" % (
+        fn.split(".")[0], len(n_facts)*100/500, np.mean(n_facts), np.mean(chatgpt_fs)*100, np.mean(llama_fs)*100
+    ))
+```
+
