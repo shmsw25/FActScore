@@ -128,7 +128,7 @@ class FactScorer(object):
             if self.af_generator is None:
                 self.af_generator = AtomicFactGenerator(key_path=self.openai_key,
                                                         demon_dir=os.path.join(self.data_dir, "demos"),
-                                                        gpt3_cache_file=os.path.join(self.cache_dir, "InstructGPT.pkl"))
+                                                        cache_file=os.path.join(self.cache_dir, "ChatGPT.pkl"))
 
             # estimate the total cost of atomic fact generation
             total_words = 0

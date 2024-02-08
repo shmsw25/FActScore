@@ -24,6 +24,33 @@ class OpenAIModel(LM):
         openai.api_key = api_key.strip()
         self.model = self.model_name
 
+    def _construct_messages(self, prompt):
+        if isinstance(prompt, str):
+            return [{"role": "user", "content": prompt}]
+
+        if isinstance(prompt, dict):
+            role = prompt.get("role", None)
+            if not _valid_role(role):
+                raise ValueError("Invalid role {role}!")
+
+            content = prompt.get("content", None)
+            if not isinstance(content, str):
+                raise ValueError("Invalid content! Must be a string.")
+
+            return [prompt]
+
+        if isinstance(prompt, list):
+            for i, m in enumerate(prompt, 1):
+                _validate_message(m)
+
+                if i > 1 and m["role"] == "system":
+                    raise ValueError("Only the first message can be a system message")
+
+                if i == len(prompt) and m["role"] != "user":
+                    raise ValueError("The last message must be a user message")
+
+            return prompt
+
     def _generate(self, prompt, max_sequence_length=2048, max_output_length=128):
         if self.add_n % self.save_interval == 0:
             self.save_cache()
@@ -31,9 +58,9 @@ class OpenAIModel(LM):
         # This should be about generating a response from the prompt, no matter what the application is
         if self.model_name == "ChatGPT":
             # Construct the prompt send to ChatGPT
-            message = [{"role": "user", "content": prompt}]
+            messages = self._construct_messages(prompt)
             # Call API
-            response = call_ChatGPT(message, temp=self.temp, max_len=max_sequence_length)
+            response = call_ChatGPT(messages, temp=self.temp, max_len=max_sequence_length)
             # Get the output from the response
             output = response["choices"][0]["message"]["content"]
             return output, response
@@ -46,7 +73,28 @@ class OpenAIModel(LM):
         else:
             raise NotImplementedError()
 
-def call_ChatGPT(message, model_name="gpt-3.5-turbo", max_len=1024, temp=0.7, verbose=False):
+
+ROLES = ["system", "user", "assistant"]
+
+
+def _valid_role(role):
+    return role in ROLES
+
+
+def _validate_message(message):
+    if not isinstance(message, dict):
+        raise ValueError("message must be a dict")
+
+    role = message.get("role", None)
+    if not _valid_role(role):
+        raise ValueError("Invalid role {role}!")
+
+    content = message.get("content", None)
+    if not isinstance(content, str):
+        raise ValueError("Invalid content! Must be a string.")
+
+
+def call_ChatGPT(messages, model_name="gpt-3.5-turbo", max_len=1024, temp=0.7, verbose=False):
     # call GPT-3 API until result is provided and then return it
     response = None
     received = False
@@ -54,7 +102,7 @@ def call_ChatGPT(message, model_name="gpt-3.5-turbo", max_len=1024, temp=0.7, ve
     while not received:
         try:
             response = openai.ChatCompletion.create(model=model_name,
-                                                    messages=message,
+                                                    messages=messages,
                                                     max_tokens=max_len,
                                                     temperature=temp)
             received = True
@@ -64,7 +112,7 @@ def call_ChatGPT(message, model_name="gpt-3.5-turbo", max_len=1024, temp=0.7, ve
             error = sys.exc_info()[0]
             if error == openai.error.InvalidRequestError:
                 # something is wrong: e.g. prompt too long
-                logging.critical(f"InvalidRequestError\nPrompt passed in:\n\n{message}\n\n")
+                logging.critical(f"InvalidRequestError\nPrompt passed in:\n\n{messages}\n\n")
                 assert False
             
             logging.error("API error: %s (%d). Waiting %dsec" % (error, num_rate_errors, np.power(2, num_rate_errors)))
