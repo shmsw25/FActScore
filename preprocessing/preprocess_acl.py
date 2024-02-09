@@ -1,7 +1,7 @@
 import pandas as pd
 import tqdm
 import json
-import openai
+from openai import OpenAI
 from factscore.openai_lm import call_ChatGPT
 from factscore.factscorer import FactScorer
 
@@ -49,12 +49,12 @@ for title in prompt_titles:
 
 with open("api.key", 'r') as f:
     api_key = f.readline()
-openai.api_key = api_key.strip()
+openai_client = OpenAI(api_key=api_key.strip())
 
 responses = []
 for ptitle, prompt in tqdm.tqdm(zip(prompt_titles, prompts_list)):
     message = [{"role": "user", "content": prompt}]
-    response = call_ChatGPT(message, model_name="gpt-3.5-turbo-0301")
+    response = call_ChatGPT(message, openai_client, model_name="gpt-3.5-turbo-0301")
     responses.append({
         "topic": ptitle,
         "output": response["choices"][0]["message"]["content"]

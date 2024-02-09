@@ -6,7 +6,6 @@ import string
 import spacy
 import sys
 import nltk
-import openai
 from rank_bm25 import BM25Okapi
 import os
 import time
