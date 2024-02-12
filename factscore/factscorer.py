@@ -94,7 +94,7 @@ class FactScorer(object):
         if model == "davinci-003":
             rate = 0.02
         elif model == "gpt-3.5-turbo":
-            rate = 0.002
+            rate = 0.0015
 
         total_cost = total_tokens * rate / 1000
 
@@ -128,14 +128,14 @@ class FactScorer(object):
             if self.af_generator is None:
                 self.af_generator = AtomicFactGenerator(key_path=self.openai_key,
                                                         demon_dir=os.path.join(self.data_dir, "demos"),
-                                                        gpt3_cache_file=os.path.join(self.cache_dir, "InstructGPT.pkl"))
+                                                        cache_file=os.path.join(self.cache_dir, "ChatGPT.pkl"))
 
             # estimate the total cost of atomic fact generation
             total_words = 0
             for gen in generations:
                 total_words += self.af_generator.run(gen, cost_estimate=self.cost_estimate)
 
-            self.print_cost_estimates(total_words, task="atomic fact generation", model="davinci-003")
+            self.print_cost_estimates(total_words, task="atomic fact generation", model="gpt-3.5-turbo")
 
             if verbose:
                 topics = tqdm(topics)

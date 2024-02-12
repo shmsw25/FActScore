@@ -14,9 +14,17 @@ class LM(object):
         # load the model and put it as self.model
         raise NotImplementedError()
 
+    def cache_key(self, prompt, sample_idx=0):
+        if isinstance(prompt, str):
+            prompt = prompt.strip() # it's important not to end with a whitespace
+
+        return f"{prompt}_{sample_idx}"
+
     def generate(self, prompt, sample_idx=0, max_sequence_length=2048, max_output_length=128):
-        prompt = prompt.strip() # it's important not to end with a whitespace
-        cache_key = f"{prompt}_{sample_idx}"
+        if isinstance(prompt, str):
+            prompt = prompt.strip() # it's important not to end with a whitespace
+
+        cache_key = self.cache_key(prompt, sample_idx=sample_idx)
 
         if cache_key in self.cache_dict:
             return self.cache_dict[cache_key]
@@ -24,7 +32,7 @@ class LM(object):
         if self.model is None:
             self.load_model()
 
-        if prompt.endswith(" True or False?\nAnswer:"):
+        if isinstance(prompt, str) and prompt.endswith(" True or False?\nAnswer:"):
             generated = self._generate(prompt, max_sequence_length=max_sequence_length, max_output_length=1)
         else:
             generated = self._generate(prompt, max_sequence_length=max_sequence_length, max_output_length=max_output_length)

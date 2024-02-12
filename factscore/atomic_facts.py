@@ -18,12 +18,12 @@ nltk.download("punkt")
 
 
 class AtomicFactGenerator(object):
-    def __init__(self, key_path, demon_dir, gpt3_cache_file=None):
+    def __init__(self, key_path, demon_dir, cache_file=None):
         self.nlp = spacy.load("en_core_web_sm")
         self.is_bio = True
         self.demon_path = os.path.join(demon_dir, "demons.json" if self.is_bio else "demons_complex.json")
 
-        self.openai_lm = OpenAIModel("InstructGPT", cache_file=gpt3_cache_file, key_path=key_path)
+        self.openai_lm = OpenAIModel("ChatGPT", cache_file=cache_file, key_path=key_path)
 
         # get the demos
         with open(self.demon_path, 'r') as f:
@@ -103,40 +103,35 @@ class AtomicFactGenerator(object):
         n = 7 if is_bio else 8
 
         prompts = []
-        prompt_to_sent = {}
         atoms = {}
         for sentence in sentences:
             if sentence in atoms:
                 continue
             top_machings = best_demos(sentence, self.bm25, list(demons.keys()), k)
-            prompt = ""
+            prompt = []
 
             for i in range(n):
-                prompt = prompt + "Please breakdown the following sentence into independent facts: {}\n".format(list(demons.keys())[i])
-                for fact in demons[list(demons.keys())[i]]:
-                    prompt = prompt + "- {}\n".format(fact)
-                prompt = prompt + "\n"
+                prompt.append({"role": "user", "content": f"Please breakdown the following sentence into independent facts: {list(demons.keys())[i]}"})
+                prompt.append({"role": "assistant", "content": "\n".join(f"- {fact}" for fact in demons[list(demons.keys())[i]])})
 
             for match in top_machings:
-                prompt = prompt + "Please breakdown the following sentence into independent facts: {}\n".format(match)
-                for fact in demons[match]:
-                    prompt = prompt + "- {}\n".format(fact)
-                prompt = prompt + "\n"
-            prompt = prompt + "Please breakdown the following sentence into independent facts: {}\n".format(sentence)
+                prompt.append({"role": "user", "content": f"Please breakdown the following sentence into independent facts: {match}"})
+                prompt.append({"role": "assistant", "content": "\n".join(f"- {fact}" for fact in demons[match])})
+
+            prompt.append({"role": "user", "content": f"Please breakdown the following sentence into independent facts: {sentence}"})
             prompts.append(prompt)
-            prompt_to_sent[prompt] = sentence
 
         if cost_estimate:
             total_words_estimate = 0
             for prompt in prompts:
-                if cost_estimate == "consider_cache" and (prompt.strip() + "_0") in self.openai_lm.cache_dict:
+                if cost_estimate == "consider_cache" and self.openai_lm.cache_key(prompt) in self.openai_lm.cache_dict:
                     continue
-                total_words_estimate += len(prompt.split())
+                total_words_estimate += sum(len(m["content"].split()) for m in prompt)
             return total_words_estimate
         else:
-            for prompt in prompts:
+            for prompt, sentence in zip(prompts, sentences):
                 output, _ = self.openai_lm.generate(prompt)
-                atoms[prompt_to_sent[prompt]] = text_to_sentences(output)
+                atoms[sentence] = text_to_sentences(output)
 
             for key, value in demons.items():
                 if key not in atoms:
