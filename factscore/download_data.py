@@ -134,9 +134,9 @@ if __name__ == '__main__':
     if not os.path.exists(args.data_dir):
         os.makedirs(args.data_dir)
 
-    download_file("1IseEAflk1qqV0z64eM60Fs3dTgnbgiyt", "demos.zip", args.data_dir)
-    download_file("1enz1PxwxeMr4FRF9dtpCPXaZQCBejuVF", "data.zip", args.data_dir)
-    download_file("1mekls6OGOKLmt7gYtHs0WGf5oTamTNat", "enwiki-20230401.db", args.data_dir)
+    # download_file("1IseEAflk1qqV0z64eM60Fs3dTgnbgiyt", "demos.zip", args.data_dir)
+    # download_file("1enz1PxwxeMr4FRF9dtpCPXaZQCBejuVF", "data.zip", args.data_dir)
+    # download_file("1mekls6OGOKLmt7gYtHs0WGf5oTamTNat", "enwiki-20230401.db", args.data_dir)
 
     if args.llama_7B_HF_path:
         recover_instruct_llama(args.llama_7B_HF_path, os.path.join(args.model_dir, "inst-llama-7B"))
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     # download the roberta_stopwords.txt file
     subprocess.run(["wget https://raw.githubusercontent.com/shmsw25/FActScore/main/roberta_stopwords.txt"], shell=True)
 
-    # move the files to the data directory
-    subprocess.run(["mv demos %s" % args.data_dir], shell=True)
-    subprocess.run(["mv enwiki-20230401.db %s" % args.data_dir], shell=True)
+    # # move the files to the data directory
+    # subprocess.run(["mv demos %s" % args.data_dir], shell=True)
+    # subprocess.run(["mv enwiki-20230401.db %s" % args.data_dir], shell=True)
 

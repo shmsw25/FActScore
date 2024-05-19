@@ -5,6 +5,38 @@ import time
 import os
 import numpy as np
 import logging
+from openai import OpenAI
+
+
+def get_completion(
+    messages: list[dict[str, str]],
+    model: str = "gpt-4o",
+    max_tokens=500,
+    temperature=1,
+    stop=None,
+    seed=123,
+    tools=None,
+    logprobs=None,  # whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the content of message..
+    top_logprobs=5,
+) -> str:
+        params = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "stop": stop,
+        "seed": seed,
+        "logprobs": logprobs,
+        "top_logprobs": top_logprobs,
+        }
+        if tools:
+            params["tools"] = tools
+        key_path = "/home/ido.amit/Project-transformers/my_open_ai_key.txt"
+        with open(key_path, 'r') as f:
+            openai_key = f.readline()
+        client = OpenAI(api_key=openai_key)
+        completion = client.chat.completions.create(**params)
+        return completion
 
 class OpenAIModel(LM):
 
@@ -35,7 +67,8 @@ class OpenAIModel(LM):
             # Call API
             response = call_ChatGPT(message, temp=self.temp, max_len=max_sequence_length)
             # Get the output from the response
-            output = response["choices"][0]["message"]["content"]
+            # output = response["choices"][0]["message"]["content"]
+            output = response.choices[0].message.content
             return output, response
         elif self.model_name == "InstructGPT":
             # Call API
@@ -46,17 +79,28 @@ class OpenAIModel(LM):
         else:
             raise NotImplementedError()
 
-def call_ChatGPT(message, model_name="gpt-3.5-turbo", max_len=1024, temp=0.7, verbose=False):
+# def call_ChatGPT(message, model_name="gpt-3.5-turbo", max_len=1024, temp=0.7, verbose=False):
+def call_ChatGPT(message, model_name="gpt-4o", max_len=1024, temp=0.7, verbose=False):
     # call GPT-3 API until result is provided and then return it
+    # print(f"model_name: {model_name}")
     response = None
     received = False
     num_rate_errors = 0
     while not received:
         try:
-            response = openai.ChatCompletion.create(model=model_name,
-                                                    messages=message,
-                                                    max_tokens=max_len,
-                                                    temperature=temp)
+            # response = openai.ChatCompletion.create(model=model_name,
+            #                                         messages=message,
+            #                                         max_tokens=max_len,
+            #                                         temperature=temp)
+            # received = True
+            response = get_completion(
+                        # [{"role": "user", "content": message}],
+                        message,
+                        model="gpt-4o",
+                        temperature=temp,
+                        max_tokens=max_len,
+                        logprobs=True)
+            # response = response.choices[0].message.content
             received = True
         except:
             # print(message)

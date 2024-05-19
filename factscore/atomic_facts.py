@@ -14,7 +14,7 @@ from nltk.tokenize import sent_tokenize
 
 from factscore.openai_lm import OpenAIModel
 
-nltk.download("punkt")
+# nltk.download("punkt")
 
 
 class AtomicFactGenerator(object):

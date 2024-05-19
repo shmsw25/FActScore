@@ -5,13 +5,15 @@ import numpy as np
 import os
 import logging
 
+import torch
+
 from tqdm import tqdm
 from factscore.abstain_detection import is_response_abstained
 from factscore.atomic_facts import AtomicFactGenerator
-from factscore.clm import CLM
+from .clm import CLM
 from factscore.npm import NPM
-from factscore.openai_lm import OpenAIModel
-from factscore.retrieval import DocDB, Retrieval
+from .openai_lm import OpenAIModel
+from .retrieval import DocDB, Retrieval
 
 class FactScorer(object):
 
@@ -26,7 +28,6 @@ class FactScorer(object):
                  batch_size=256):
         assert model_name in ["retrieval+llama", "retrieval+llama+npm", "retrieval+ChatGPT", "npm", "retrieval+ChatGPT+npm"]
         self.model_name = model_name
-
         self.db = {}
         self.retrieval = {}
         self.npm = {}
@@ -50,6 +51,10 @@ class FactScorer(object):
             self.lm = OpenAIModel("ChatGPT",
                                   cache_file=os.path.join(cache_dir, "ChatGPT.pkl"),
                                   key_path=openai_key)
+        # elif "ChatGPT" in model_name:
+        #     self.lm = OpenAIModel("gpt-4",
+        #                           cache_file=os.path.join(cache_dir, "ChatGPT.pkl"),
+        #                           key_path=openai_key)
         else:
             self.lm = None
 
@@ -62,7 +67,7 @@ class FactScorer(object):
         for k, v in self.retrieval.items():
             v.save_cache()
 
-    def register_knowledge_source(self, name="enwiki-20230401", db_path=None, data_path=None):
+    def register_knowledge_source(self, name="enwiki-20230401", db_path='/home/ido.amit/Project-transformers/FActScore/.cache/factscore/enwiki-20230401.db', data_path=None):
         assert name not in self.retrieval, f"{name} already registered"
         if db_path is None:
             db_path = os.path.join(self.data_dir, f"{name}.db")
@@ -206,10 +211,16 @@ class FactScorer(object):
         
         return out
 
-    def _get_score(self, topic, generation, atomic_facts, knowledge_source, cost_estimate=None):
+    def _get_score(self, topic, generation, atomic_facts, knowledge_source=None, cost_estimate=None, theta=0.95):
+        if knowledge_source is None:
+            # use the default knowledge source
+            knowledge_source = "enwiki-20230401"
+        if knowledge_source not in self.retrieval:
+            self.register_knowledge_source(knowledge_source)
+
         decisions = []
         total_words = 0
-        for atom in atomic_facts:
+        for idx,atom in enumerate(atomic_facts):
             atom = atom.strip()
             if self.lm:
                 passages = self.retrieval[knowledge_source].get_passages(topic, atom, k=5)
@@ -230,35 +241,45 @@ class FactScorer(object):
                     continue
 
                 output = self.lm.generate(prompt)
-
-                if type(output[1])==np.ndarray:
+                true_keywords = [' true','true','True',' True', 'TRUE', ' TRUE']
+                false_keywords = [' false','false','False',' False', 'FALSE', ' FALSE']
+                if type(output[1])==np.ndarray: # If you're an HF model
                     # when logits are available
                     logits = np.array(output[1])
-                    assert logits.shape[0] in [32000, 32001]
-                    true_score = logits[5852]
-                    false_score = logits[7700]
-                    is_supported = true_score > false_score
-                else:
-                    # when logits are unavailable
-                    generated_answer = output[0].lower()
-                    if "true" in generated_answer or "false" in generated_answer:
-                        if "true" in generated_answer and "false" not in generated_answer:
-                            is_supported = True
-                        elif "false" in generated_answer and "true" not in generated_answer:
-                            is_supported = False
-                        else:
-                            is_supported = generated_answer.index("true") > generated_answer.index("false")
-                    else:
-                        is_supported = all([keyword not in generated_answer.lower().translate(str.maketrans("", "", string.punctuation)).split() for keyword in ["not", "cannot", "unknown", "information"]])
+                    true_tokens = [tok[1] for tok in self.lm.tokenizer(true_keywords)['input_ids']]
+                    false_tokens = [tok[1] for tok in self.lm.tokenizer(false_keywords)['input_ids']]
+                    scores = torch.nn.functional.softmax(torch.tensor(logits), dim=-1)
+                    true_score = torch.sum(scores[true_tokens]).item()
+                    false_score = torch.sum(scores[false_tokens]).item()
 
+                else: # You should be an OpenAI model
+                    # when logits are unavailable
+                    assert 'GPT' in self.lm.model_name or 'GPT' in self.lm.model, "You don't have logits, yet you also aren't GPT. Make up your mind."
+                    response = output[1]
+                    top_logprobs = response.choices[0].logprobs.content[0].top_logprobs
+                    # true_tokens = [ for tok in true_keywords if tok in top_logprobs]
+                    true_score, false_score = 0,0
+                    for tok in top_logprobs:
+                        if tok.token in true_keywords:
+                            true_score += np.exp(tok.logprob)
+                        elif tok.token in false_keywords:
+                            false_score += np.exp(tok.logprob)
+
+                if max(true_score, false_score) > theta:
+                    # print(f"atom {idx}: Choosen label is certain. True: {true_score}, False: {false_score}")
+                    is_supported = int(true_score > false_score)
+                else:
+                    # print(f"atom {idx}: Choosen label is uncertain. True: {true_score}, False: {false_score}")
+                    is_supported = -1
             else:
                 is_supported = True
 
-            if is_supported and "npm" in self.model_name:
+            if is_supported==1 and "npm" in self.model_name:
                 npprob = self.npm[knowledge_source].get_probabilty(topic, atom)
                 is_supported = npprob > 0.3
 
-            decisions.append({"atom": atom, "is_supported": is_supported})
+            decisions.append({"atom": atom, "is_supported": is_supported,
+                            "true_score": true_score, "false_score": false_score})
 
         if cost_estimate:
             return total_words
