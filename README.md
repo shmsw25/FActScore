@@ -19,7 +19,7 @@ If you find FActScore useful, please cite:
 ```
 
 ## Announcement
-* **11/04/2023**: The data we release includes human annotations of factual precision reported in Section 3 of [the paper](https://arxiv.org/abs/2305.14251). If you want to download these human annotated data *only*, without other data, you can download it directly from [this Google Drive link](https://drive.google.com/file/d/1enz1PxwxeMr4FRF9dtpCPXaZQCBejuVF/view?usp=sharing). We are also releasing FActScore results of 12 different LMs reported in Section 4.3 of the paper, in case you want to obtain them without running the code. Please refer to [here](#factscore-results-of-the-unlabeled-data).
+* **11/04/2023**: The data we release includes human annotations of factual precision reported in Section 3 of [the paper](https://arxiv.org/abs/2305.14251). If you want to download these human annotated data *only*, without other data, you can download it directly from [this Google Drive link](https://drive.google.com/drive/folders/1kFey69z8hGXScln01mVxrOhrqgM62X7I?usp=sharing). We are also releasing FActScore results of 12 different LMs reported in Section 4.3 of the paper, in case you want to obtain them without running the code. Please refer to [here](#factscore-results-of-the-unlabeled-data).
 
 ## Install
 <!-- ```
@@ -50,8 +50,8 @@ This command does the following.
 - `--model_dir`: directory to store Inst-LLAMA weights. `.cache/factscore` by default.
 
 **Troubleshooting**:
-- If you get a `ERROR 429: Too Many Requests` error while downloading the DB file, please download the DB from [this Google Drive link](https://drive.google.com/file/d/1mekls6OGOKLmt7gYtHs0WGf5oTamTNat/view?usp=sharing) and place it under `--data_dir` (`.cache/factscore` by default).
-- If everything else fails, consider downloading the files manually from [this link](https://drive.google.com/drive/folders/1bLHGu_imkZVtX6O0mpZ-G0-4ofTLM1ZA?usp=share_link) and placing them in `--data_dir` and `--model_dir`, see [`factscore/download_data.py`](factscore/download_data.py) for more details.
+- If you get a `ERROR 429: Too Many Requests` error while downloading the DB file, please download the DB from [this Google Drive link](https://drive.google.com/drive/folders/1kFey69z8hGXScln01mVxrOhrqgM62X7I?usp=sharing) and place it under `--data_dir` (`.cache/factscore` by default).
+- If everything else fails, consider downloading the files manually from [this link](https://drive.google.com/drive/folders/1kFey69z8hGXScln01mVxrOhrqgM62X7I?usp=sharing) and placing them in `--data_dir` and `--model_dir`, see [`factscore/download_data.py`](factscore/download_data.py) for more details.
 
 
 ## Running FActScore using a command line
@@ -149,7 +149,7 @@ To see an example of constructing the ACL anthology knowledge source, see [`prep
 
 ## FActScore results of the unlabeled data
 
-You can easily reproduce FActScore results of 12 different LMs reported in Section 4.3 of [the paper](https://arxiv.org/abs/2305.14251) using this code. However, if you would like to obtain their predictions without running the code, you can download it from [this Google Drive link](https://drive.google.com/file/d/128qpNFhXJJTmPIbtqMJ5QSZprhWQDCDa/view?usp=sharing).
+You can easily reproduce FActScore results of 12 different LMs reported in Section 4.3 of [the paper](https://arxiv.org/abs/2305.14251) using this code. However, if you would like to obtain their predictions without running the code, you can download it from [this Google Drive link](https://drive.google.com/drive/folders/1kFey69z8hGXScln01mVxrOhrqgM62X7I?usp=sharing).
 
 Each file corresponds to the subject LM (LM that generates responses that we are validating). Each line is a dictionary:
 - `prompt`: the initial prompt fed into the LM
